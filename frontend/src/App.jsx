@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
+import OAuth2Callback from './pages/OAuth2Callback'
 import './App.css'
 
 function App() {
@@ -31,6 +32,9 @@ function App() {
         } />
         <Route path="/register" element={
           token ? <Navigate to="/dashboard" /> : <Register onLogin={handleLogin} />
+        } />
+        <Route path="/oauth2/callback" element={
+          <OAuth2Callback onLogin={handleLogin} />
         } />
         <Route path="/dashboard" element={
           token ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />
