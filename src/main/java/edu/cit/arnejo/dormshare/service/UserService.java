@@ -1,5 +1,9 @@
 package edu.cit.arnejo.dormshare.service;
 
+import edu.cit.arnejo.dormshare.config.JwtUtil;
+import edu.cit.arnejo.dormshare.dto.AuthResponse;
+import edu.cit.arnejo.dormshare.dto.LoginRequest;
+import edu.cit.arnejo.dormshare.dto.RegisterRequest;
 import edu.cit.arnejo.dormshare.entity.UserEntity;
 import edu.cit.arnejo.dormshare.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,95 +18,95 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
     }
 
     /**
      * Register a new user.
-     * - Validates required fields
-     * - Checks for duplicate email
-     * - Hashes password with BCrypt
-     * - Saves to database
+     * Validates fields, checks duplicate email, hashes password with BCrypt, saves to DB.
      */
-    public Map<String, Object> registerUser(String name, String email, String password) {
-        Map<String, Object> response = new HashMap<>();
-
+    public AuthResponse registerUser(RegisterRequest request) {
         // Validate required fields
-        if (name == null || name.trim().isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Name is required.");
-            return response;
+        if (request.getFirstName() == null || request.getFirstName().trim().isEmpty()) {
+            return AuthResponse.error("VALID-001", "Validation failed", "First name is required");
         }
-        if (email == null || email.trim().isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Email is required.");
-            return response;
+        if (request.getLastName() == null || request.getLastName().trim().isEmpty()) {
+            return AuthResponse.error("VALID-001", "Validation failed", "Last name is required");
         }
-        if (password == null || password.trim().isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Password is required.");
-            return response;
+        if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
+            return AuthResponse.error("VALID-001", "Validation failed", "Email is required");
+        }
+        if (request.getPassword() == null || request.getPassword().length() < 8) {
+            return AuthResponse.error("VALID-001", "Validation failed", "Password must be at least 8 characters");
         }
 
         // Check for duplicate email
-        if (userRepository.existsByEmail(email)) {
-            response.put("success", false);
-            response.put("message", "Email is already registered.");
-            return response;
+        if (userRepository.existsByEmail(request.getEmail().trim().toLowerCase())) {
+            return AuthResponse.error("DB-002", "Duplicate entry", "Email is already registered");
         }
 
-        // Create and save user with hashed password
+        // Create and save user
         UserEntity user = new UserEntity();
-        user.setName(name.trim());
-        user.setEmail(email.trim().toLowerCase());
-        user.setPassword(passwordEncoder.encode(password));
+        user.setFirstName(request.getFirstName().trim());
+        user.setLastName(request.getLastName().trim());
+        user.setEmail(request.getEmail().trim().toLowerCase());
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setRole("USER");
 
         userRepository.save(user);
 
-        response.put("success", true);
-        response.put("message", "User registered successfully.");
-        return response;
+        // Generate JWT token
+        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole());
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("token", token);
+        data.put("userId", user.getId());
+        data.put("email", user.getEmail());
+        data.put("firstName", user.getFirstName());
+        data.put("lastName", user.getLastName());
+        data.put("role", user.getRole());
+
+        return AuthResponse.ok(data);
     }
 
     /**
      * Login an existing user.
-     * - Finds user by email
-     * - Verifies password with BCrypt
-     * - Returns user info on success
+     * Finds by email, verifies password with BCrypt, returns JWT token.
      */
-    public Map<String, Object> loginUser(String email, String password) {
-        Map<String, Object> response = new HashMap<>();
-
-        if (email == null || email.trim().isEmpty() || password == null || password.trim().isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Email and password are required.");
-            return response;
+    public AuthResponse loginUser(LoginRequest request) {
+        if (request.getEmail() == null || request.getEmail().trim().isEmpty()
+                || request.getPassword() == null || request.getPassword().trim().isEmpty()) {
+            return AuthResponse.error("VALID-001", "Validation failed", "Email and password are required");
         }
 
-        Optional<UserEntity> optionalUser = userRepository.findByEmail(email.trim().toLowerCase());
+        Optional<UserEntity> optionalUser = userRepository.findByEmail(request.getEmail().trim().toLowerCase());
 
         if (optionalUser.isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Invalid email or password.");
-            return response;
+            return AuthResponse.error("AUTH-001", "Invalid credentials", "Email or password is incorrect");
         }
 
         UserEntity user = optionalUser.get();
 
-        if (!passwordEncoder.matches(password, user.getPassword())) {
-            response.put("success", false);
-            response.put("message", "Invalid email or password.");
-            return response;
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            return AuthResponse.error("AUTH-001", "Invalid credentials", "Email or password is incorrect");
         }
 
-        response.put("success", true);
-        response.put("message", "Login successful.");
-        response.put("userId", user.getId());
-        response.put("name", user.getName());
-        response.put("email", user.getEmail());
-        return response;
+        // Generate JWT token
+        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole());
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("token", token);
+        data.put("userId", user.getId());
+        data.put("email", user.getEmail());
+        data.put("firstName", user.getFirstName());
+        data.put("lastName", user.getLastName());
+        data.put("role", user.getRole());
+
+        return AuthResponse.ok(data);
     }
 }

@@ -1,14 +1,15 @@
 package edu.cit.arnejo.dormshare.controller;
 
+import edu.cit.arnejo.dormshare.dto.AuthResponse;
+import edu.cit.arnejo.dormshare.dto.LoginRequest;
+import edu.cit.arnejo.dormshare.dto.RegisterRequest;
 import edu.cit.arnejo.dormshare.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 @CrossOrigin(origins = "*")
 public class AuthController {
 
@@ -19,36 +20,33 @@ public class AuthController {
     }
 
     /**
-     * POST /api/auth/register
-     * Request body: { "name": "...", "email": "...", "password": "..." }
+     * POST /auth/register
+     * Registers a new user with email, password, first name, and last name.
      */
     @PostMapping("/register")
-    public ResponseEntity<Map<String, Object>> register(@RequestBody Map<String, String> request) {
-        String name = request.get("name");
-        String email = request.get("email");
-        String password = request.get("password");
+    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
+        AuthResponse result = userService.registerUser(request);
 
-        Map<String, Object> result = userService.registerUser(name, email, password);
-
-        if ((boolean) result.get("success")) {
-            return ResponseEntity.ok(result);
+        if (result.isSuccess()) {
+            return ResponseEntity.status(HttpStatus.CREATED).body(result);
         } else {
+            String errorCode = result.getError().getCode();
+            if ("DB-002".equals(errorCode)) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(result);
+            }
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(result);
         }
     }
 
     /**
-     * POST /api/auth/login
-     * Request body: { "email": "...", "password": "..." }
+     * POST /auth/login
+     * Authenticates a user and returns an access token.
      */
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        String password = request.get("password");
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+        AuthResponse result = userService.loginUser(request);
 
-        Map<String, Object> result = userService.loginUser(email, password);
-
-        if ((boolean) result.get("success")) {
+        if (result.isSuccess()) {
             return ResponseEntity.ok(result);
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);

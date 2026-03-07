@@ -17,13 +17,19 @@ public class UserEntity {
     private Long id;
 
     @Column(nullable = false)
-    private String name;
-
-    @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
+
+    @Column(name = "first_name", nullable = false)
+    private String firstName;
+
+    @Column(name = "last_name", nullable = false)
+    private String lastName;
+
     @Column(nullable = false)
-    private String password;
+    private String role = "USER";
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -31,5 +37,8 @@ public class UserEntity {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        if (this.role == null) {
+            this.role = "USER";
+        }
     }
 }
