@@ -7,6 +7,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -21,6 +22,9 @@ public class SecurityConfig {
     @Autowired(required = false)
     private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
+    @Autowired(required = false)
+    private ClientRegistrationRepository clientRegistrationRepository;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -31,8 +35,8 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             );
 
-        // Only enable OAuth2 login if the handler is available (Google credentials configured)
-        if (oAuth2LoginSuccessHandler != null) {
+        // Only enable OAuth2 login if Google credentials are configured
+        if (clientRegistrationRepository != null && oAuth2LoginSuccessHandler != null) {
             http.oauth2Login(oauth2 -> oauth2
                 .successHandler(oAuth2LoginSuccessHandler)
             );
