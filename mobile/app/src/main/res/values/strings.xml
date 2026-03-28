@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">DormShare</string>
+
+    <!-- Login Screen -->
+    <string name="login_title">Welcome Back</string>
+    <string name="login_subtitle">Sign in to your DormShare account</string>
+    <string name="email_hint">Email</string>
+    <string name="password_hint">Password</string>
+    <string name="login_button">Login</string>
+    <string name="no_account">Don\'t have an account? </string>
+    <string name="register_link">Register</string>
+
+    <!-- Register Screen -->
+    <string name="register_title">Create Account</string>
+    <string name="register_subtitle">Join DormShare today</string>
+    <string name="first_name_hint">First Name</string>
+    <string name="last_name_hint">Last Name</string>
+    <string name="register_button">Register</string>
+    <string name="have_account">Already have an account? </string>
+    <string name="login_link">Login</string>
+
+    <!-- Home Screen -->
+    <string name="home_title">DormShare</string>
+    <string name="welcome_message">Welcome to DormShare!</string>
+    <string name="logout_button">Logout</string>
+
+    <!-- Messages -->
+    <string name="registration_successful">Registration Successful!</string>
+    <string name="registration_successful_message">Your account has been created. Please login with your credentials.</string>
+    <string name="invalid_credentials">Invalid email or password</string>
+    <string name="error_empty_field">This field is required</string>
+    <string name="error_invalid_email">Please enter a valid email address</string>
+    <string name="error_short_password">Password must be at least 8 characters</string>
+    <string name="error_network">Network error. Please check your connection.</string>
+    <string name="loading">Please wait…</string>
+</resources>
