@@ -1,18 +1,21 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { registerUser } from '../services/api'
 import './Auth.css'
 
-function Register({ onLogin }) {
+function Register() {
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setSuccess('')
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters')
@@ -29,7 +32,10 @@ function Register({ onLogin }) {
     try {
       const result = await registerUser(firstName, lastName, email, password)
       if (result.success) {
-        onLogin(result.data.token, result.data)
+        setSuccess('Account created successfully! Redirecting to login...')
+        setTimeout(() => {
+          navigate('/login')
+        }, 2000)
       } else {
         setError(result.error?.details || result.error?.message || 'Registration failed')
       }
@@ -67,6 +73,7 @@ function Register({ onLogin }) {
           <p className="subtitle">Get started with DormShare today</p>
 
           {error && <div className="error-message">{error}</div>}
+          {success && <div className="success-message">{success}</div>}
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
@@ -79,6 +86,7 @@ function Register({ onLogin }) {
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   required
+                  disabled={!!success}
                 />
               </div>
             </div>
@@ -93,6 +101,7 @@ function Register({ onLogin }) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={!!success}
                 />
               </div>
             </div>
@@ -108,13 +117,14 @@ function Register({ onLogin }) {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={8}
+                  disabled={!!success}
                 />
               </div>
             </div>
 
-            <button type="submit" className="btn-primary" disabled={loading}>
+            <button type="submit" className="btn-primary" disabled={loading || !!success}>
               {loading ? 'Creating Account...' : 'Create Account'}
-              {!loading && <span className="btn-arrow">→</span>}
+              {!loading && !success && <span className="btn-arrow">→</span>}
             </button>
           </form>
 

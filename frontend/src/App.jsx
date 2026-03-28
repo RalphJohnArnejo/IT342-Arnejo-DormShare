@@ -31,7 +31,7 @@ function App() {
           token ? <Navigate to="/dashboard" /> : <Login onLogin={handleLogin} />
         } />
         <Route path="/register" element={
-          token ? <Navigate to="/dashboard" /> : <Register onLogin={handleLogin} />
+          token ? <Navigate to="/dashboard" /> : <Register />
         } />
         <Route path="/oauth2/callback" element={
           <OAuth2Callback onLogin={handleLogin} />
