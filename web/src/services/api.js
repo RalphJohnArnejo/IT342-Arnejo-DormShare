@@ -1,6 +1,17 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/auth';
+// Auth API (public endpoints)
+const AUTH_BASE_URL = 'http://localhost:8080/auth';
+
+const authApi = axios.create({
+  baseURL: AUTH_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Authenticated API (protected endpoints)
+const API_BASE_URL = 'http://localhost:8080/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,8 +20,32 @@ const api = axios.create({
   },
 });
 
+// Attach JWT token to every authenticated request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Handle 401 responses globally
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// ==================== AUTH ENDPOINTS ====================
+
 export const registerUser = async (firstName, lastName, email, password) => {
-  const response = await api.post('/register', {
+  const response = await authApi.post('/register', {
     firstName,
     lastName,
     email,
@@ -20,11 +55,59 @@ export const registerUser = async (firstName, lastName, email, password) => {
 };
 
 export const loginUser = async (email, password) => {
-  const response = await api.post('/login', {
+  const response = await authApi.post('/login', {
     email,
     password,
   });
   return response.data;
 };
 
+// ==================== PANTRY ENDPOINTS ====================
+
+export const getAllPantryItems = async () => {
+  const response = await api.get('/pantry');
+  return response.data;
+};
+
+export const getPantryStats = async () => {
+  const response = await api.get('/pantry/stats');
+  return response.data;
+};
+
+export const getPantryItemById = async (id) => {
+  const response = await api.get(`/pantry/${id}`);
+  return response.data;
+};
+
+export const getPantryItemsByStatus = async (status) => {
+  const response = await api.get(`/pantry/status/${status}`);
+  return response.data;
+};
+
+export const getPantryItemsByCategory = async (category) => {
+  const response = await api.get(`/pantry/category/${category}`);
+  return response.data;
+};
+
+export const searchPantryItems = async (query) => {
+  const response = await api.get(`/pantry/search?q=${encodeURIComponent(query)}`);
+  return response.data;
+};
+
+export const addPantryItem = async (itemData) => {
+  const response = await api.post('/pantry', itemData);
+  return response.data;
+};
+
+export const updatePantryItem = async (itemId, itemData) => {
+  const response = await api.patch(`/pantry/${itemId}`, itemData);
+  return response.data;
+};
+
+export const deletePantryItem = async (itemId) => {
+  const response = await api.delete(`/pantry/${itemId}`);
+  return response.data;
+};
+
+export { api, authApi };
 export default api;

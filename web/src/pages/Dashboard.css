@@ -1,4 +1,6 @@
 /* Dashboard Styles */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 .dashboard-container {
   display: flex;
   min-height: 100vh;
@@ -14,6 +16,9 @@
   display: flex;
   flex-direction: column;
   border-right: 1px solid #334155;
+  position: sticky;
+  top: 0;
+  height: 100vh;
 }
 
 .sidebar-brand {
@@ -82,6 +87,7 @@
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
+  font-family: inherit;
   transition: all 0.2s ease;
 }
 
@@ -93,8 +99,19 @@
 /* Main Content */
 .main-content {
   flex: 1;
-  padding: 2rem;
   overflow-y: auto;
+  max-height: 100vh;
+}
+
+/* Dashboard Page */
+.dashboard-page {
+  padding: 2rem;
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .dashboard-header {
@@ -184,6 +201,17 @@
   border-radius: 16px;
   padding: 1.5rem;
   border: 1px solid #334155;
+  transition: all 0.2s ease;
+}
+
+.clickable-card {
+  cursor: pointer;
+}
+
+.clickable-card:hover {
+  border-color: #6366f1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.1);
 }
 
 .card h3 {
@@ -210,6 +238,51 @@
   margin: 0;
 }
 
+/* Pantry Overview Stats on Dashboard */
+.pantry-overview-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.overview-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0;
+}
+
+.overview-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.overview-dot.green { background: #4ade80; }
+.overview-dot.yellow { background: #fbbf24; }
+.overview-dot.red { background: #f87171; }
+
+.overview-label {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  flex: 1;
+}
+
+.overview-count {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.overview-total {
+  padding-top: 0.5rem;
+  border-top: 1px solid #334155;
+  font-size: 0.82rem;
+  color: #6366f1;
+  font-weight: 500;
+  text-align: right;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .dashboard-container {
@@ -218,9 +291,20 @@
 
   .sidebar {
     width: 100%;
+    height: auto;
     flex-direction: row;
     align-items: center;
     padding: 1rem;
+    position: static;
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .sidebar-brand {
+    margin-bottom: 0;
   }
 
   .stats-grid {
