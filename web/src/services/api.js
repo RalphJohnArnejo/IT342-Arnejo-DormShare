@@ -109,5 +109,32 @@ export const deletePantryItem = async (itemId) => {
   return response.data;
 };
 
+// ==================== EXPENSE ENDPOINTS ====================
+
+export const logExpense = async (expenseData) => {
+  const response = await api.post('/expenses', expenseData);
+  return response.data;
+};
+
+export const getExpenseLedger = async () => {
+  const response = await api.get('/expenses/ledger');
+  return response.data;
+};
+
+export const getExpenseSummary = async () => {
+  const response = await api.get('/expenses/summary');
+  return response.data;
+};
+
+export const getAllRoommates = async () => {
+  const response = await api.get('/expenses/users');
+  return response.data;
+};
+
+export const settleSplit = async (splitId) => {
+  const response = await api.patch(`/expenses/settle/${splitId}`);
+  return response.data;
+};
+
 export { api, authApi };
 export default api;

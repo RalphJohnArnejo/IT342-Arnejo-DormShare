@@ -1,24 +1,31 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getPantryStats } from '../services/api'
+import { getPantryStats, getExpenseSummary, getExpenseLedger } from '../services/api'
 import './Dashboard.css'
 
 function Dashboard({ user }) {
   const navigate = useNavigate()
   const [pantryStats, setPantryStats] = useState({ totalItems: 0, inStock: 0, lowStock: 0, outOfStock: 0 })
+  const [expenseSummary, setExpenseSummary] = useState({ owedToYou: 0, youOwe: 0, netBalance: 0 })
+  const [recentExpenses, setRecentExpenses] = useState([])
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchData = async () => {
       try {
-        const result = await getPantryStats()
-        if (result.success) {
-          setPantryStats(result.data)
-        }
+        const [pantryRes, summaryRes, ledgerRes] = await Promise.all([
+          getPantryStats(),
+          getExpenseSummary(),
+          getExpenseLedger()
+        ])
+        
+        if (pantryRes.success) setPantryStats(pantryRes.data)
+        if (summaryRes.success) setExpenseSummary(summaryRes.data)
+        if (ledgerRes.success) setRecentExpenses(ledgerRes.data.slice(0, 3))
       } catch (err) {
-        // silent
+        console.error('Dashboard data fetch error:', err)
       }
     }
-    fetchStats()
+    fetchData()
   }, [])
 
   return (
@@ -33,28 +40,45 @@ function Dashboard({ user }) {
       <div className="stats-grid">
         <div className="stat-card owed-to-you">
           <div className="stat-label">Owed to You</div>
-          <div className="stat-value">₱0.00</div>
-          <div className="stat-change positive">No pending debts</div>
+          <div className="stat-value">₱{expenseSummary.owedToYou.toLocaleString()}</div>
+          <div className="stat-change">From roommate splits</div>
         </div>
         <div className="stat-card you-owe">
           <div className="stat-label">You Owe</div>
-          <div className="stat-value">₱0.00</div>
-          <div className="stat-change positive">All settled up!</div>
+          <div className="stat-value">₱{expenseSummary.youOwe.toLocaleString()}</div>
+          <div className="stat-change">Unsettled debts</div>
         </div>
         <div className="stat-card net-balance">
           <div className="stat-label">Net Balance</div>
-          <div className="stat-value">₱0.00</div>
-          <div className="stat-change">You're all even</div>
+          <div className="stat-value">₱{expenseSummary.netBalance.toLocaleString()}</div>
+          <div className="stat-change">{expenseSummary.netBalance >= 0 ? 'Surplus' : 'Deficit'}</div>
         </div>
       </div>
 
       <div className="content-grid">
-        <div className="card">
+        <div className="card clickable-card" onClick={() => navigate('/expenses')}>
           <h3>Roommate Ledger</h3>
-          <div className="empty-state">
-            <span className="empty-icon">📋</span>
-            <p>No expenses yet. Start by adding an expense!</p>
-          </div>
+          {recentExpenses.length > 0 ? (
+            <div className="recent-ledger">
+              {recentExpenses.map(exp => (
+                <div key={exp.id} className="ledger-item-mini">
+                  <div className="ledger-info">
+                    <span className="ledger-title">{exp.description}</span>
+                    <span className="ledger-date">{new Date(exp.date).toLocaleDateString()}</span>
+                  </div>
+                  <div className="ledger-amt">₱{exp.amount}</div>
+                </div>
+              ))}
+              <div className="overview-total" style={{ marginTop: '1rem' }}>
+                View all expenses →
+              </div>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <span className="empty-icon">📋</span>
+              <p>No expenses yet. Start by adding an expense!</p>
+            </div>
+          )}
         </div>
         <div className="card clickable-card" onClick={() => navigate('/pantry')}>
           <h3>Pantry Overview</h3>

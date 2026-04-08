@@ -4,6 +4,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Pantry from './pages/Pantry'
+import Expenses from './pages/Expenses'
 import OAuth2Callback from './pages/OAuth2Callback'
 import './App.css'
 
@@ -53,12 +54,7 @@ function AppLayout({ user, token, onLogout }) {
         <Routes>
           <Route path="/dashboard" element={<Dashboard user={user} />} />
           <Route path="/pantry" element={<Pantry user={user} />} />
-          <Route path="/expenses" element={
-            <div style={{ padding: '2rem', color: '#94a3b8' }}>
-              <h1 style={{ color: '#f1f5f9', marginBottom: '0.5rem' }}>Expenses</h1>
-              <p>Coming soon — Expense tracking and splitting.</p>
-            </div>
-          } />
+          <Route path="/expenses" element={<Expenses user={user} />} />
           <Route path="/profile" element={
             <div style={{ padding: '2rem', color: '#94a3b8' }}>
               <h1 style={{ color: '#f1f5f9', marginBottom: '0.5rem' }}>Profile</h1>
