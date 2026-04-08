@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -75,7 +75,16 @@ function AppLayout({ user, token, onLogout }) {
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token'))
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || 'null'))
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('user')
+      return savedUser ? JSON.parse(savedUser) : null
+    } catch (e) {
+      console.error('Failed to parse user from localStorage', e)
+      localStorage.removeItem('user')
+      return null
+    }
+  })
 
   const handleLogin = (tokenValue, userData) => {
     localStorage.setItem('token', tokenValue)
