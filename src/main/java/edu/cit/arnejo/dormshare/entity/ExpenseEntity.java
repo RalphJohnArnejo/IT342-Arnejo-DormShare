@@ -21,6 +21,9 @@ public class ExpenseEntity {
     @Column(name = "paid_by_id", nullable = false)
     private Long paidById;
 
+    @Column(name = "group_id")
+    private Long groupId;
+
     @Column
     private String category;
 
@@ -43,6 +46,7 @@ public class ExpenseEntity {
     public BigDecimal getAmount() { return amount; }
     public String getDescription() { return description; }
     public Long getPaidById() { return paidById; }
+    public Long getGroupId() { return groupId; }
     public String getCategory() { return category; }
     public LocalDateTime getDate() { return date; }
     public LocalDateTime getCreatedAt() { return createdAt; }
@@ -52,6 +56,7 @@ public class ExpenseEntity {
     public void setAmount(BigDecimal amount) { this.amount = amount; }
     public void setDescription(String description) { this.description = description; }
     public void setPaidById(Long paidById) { this.paidById = paidById; }
+    public void setGroupId(Long groupId) { this.groupId = groupId; }
     public void setCategory(String category) { this.category = category; }
     public void setDate(LocalDateTime date) { this.date = date; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

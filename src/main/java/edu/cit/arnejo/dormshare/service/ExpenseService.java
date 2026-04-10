@@ -35,7 +35,7 @@ public class ExpenseService {
     }
 
     @Transactional
-    public ApiResponse createExpense(ExpenseRequest request) {
+    public ApiResponse createExpense(ExpenseRequest request, Long groupId) {
         if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             return ApiResponse.error("VALID-001", "Invalid amount", "Amount must be greater than zero");
         }
@@ -59,6 +59,7 @@ public class ExpenseService {
         expense.setDescription(request.getDescription());
         expense.setPaidById(request.getPaidById());
         expense.setCategory(request.getCategory());
+        expense.setGroupId(groupId);
         
         expense = expenseRepository.save(expense);
 
@@ -81,23 +82,30 @@ public class ExpenseService {
         return ApiResponse.ok(mapToResponse(expense));
     }
 
-    public ApiResponse getLedger() {
-        List<ExpenseEntity> expenses = expenseRepository.findAllByOrderByDateDesc();
+    public ApiResponse getLedger(Long groupId) {
+        List<ExpenseEntity> expenses = expenseRepository.findByGroupIdOrderByDateDesc(groupId);
         List<ExpenseResponse> responses = expenses.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
         return ApiResponse.ok(responses);
     }
 
-    public ApiResponse getSummary(Long userId) {
+    public ApiResponse getSummary(Long userId, Long groupId) {
         // You Owe: Sum of all splits for this user that are NOT settled
+        // Only for expenses in this group
         List<ExpenseSplitEntity> youOweSplits = splitRepository.findByUserIdAndIsSettled(userId, false);
-        BigDecimal totalYouOwe = youOweSplits.stream()
-                .map(ExpenseSplitEntity::getAmountOwed)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalYouOwe = BigDecimal.ZERO;
+        
+        for (ExpenseSplitEntity split : youOweSplits) {
+            // Check if the expense belongs to this group
+            Optional<ExpenseEntity> expOpt = expenseRepository.findById(split.getExpenseId());
+            if (expOpt.isPresent() && groupId.equals(expOpt.get().getGroupId())) {
+                totalYouOwe = totalYouOwe.add(split.getAmountOwed());
+            }
+        }
 
-        // Owed to You: Sum of all splits for OTHER users for expenses paid by you
-        List<ExpenseEntity> yourPaidExpenses = expenseRepository.findByPaidByIdOrderByDateDesc(userId);
+        // Owed to You: Sum of all splits for OTHER users for expenses paid by you in this group
+        List<ExpenseEntity> yourPaidExpenses = expenseRepository.findByPaidByIdAndGroupIdOrderByDateDesc(userId, groupId);
         BigDecimal totalOwedToYou = BigDecimal.ZERO;
         
         for (ExpenseEntity exp : yourPaidExpenses) {

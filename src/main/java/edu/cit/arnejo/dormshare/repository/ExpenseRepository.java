@@ -9,4 +9,8 @@ import java.util.List;
 public interface ExpenseRepository extends JpaRepository<ExpenseEntity, Long> {
     List<ExpenseEntity> findByPaidByIdOrderByDateDesc(Long paidById);
     List<ExpenseEntity> findAllByOrderByDateDesc();
+
+    // Group-scoped queries
+    List<ExpenseEntity> findByGroupIdOrderByDateDesc(Long groupId);
+    List<ExpenseEntity> findByPaidByIdAndGroupIdOrderByDateDesc(Long paidById, Long groupId);
 }

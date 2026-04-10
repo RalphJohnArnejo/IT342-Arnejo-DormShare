@@ -23,6 +23,9 @@ public class PantryItemEntity {
     @Column(nullable = false)
     private Double quantity = 1.0;
 
+    @Column(name = "group_id")
+    private Long groupId;
+
     @Column(name = "added_by_id")
     private Long addedById;
 
@@ -61,6 +64,7 @@ public class PantryItemEntity {
     public String getCategory() { return category; }
     public String getStatus() { return status; }
     public Double getQuantity() { return quantity; }
+    public Long getGroupId() { return groupId; }
     public Long getAddedById() { return addedById; }
     public String getAddedByName() { return addedByName; }
     public Long getUpdatedById() { return updatedById; }
@@ -74,6 +78,7 @@ public class PantryItemEntity {
     public void setCategory(String category) { this.category = category; }
     public void setStatus(String status) { this.status = status; }
     public void setQuantity(Double quantity) { this.quantity = quantity; }
+    public void setGroupId(Long groupId) { this.groupId = groupId; }
     public void setAddedById(Long addedById) { this.addedById = addedById; }
     public void setAddedByName(String addedByName) { this.addedByName = addedByName; }
     public void setUpdatedById(Long updatedById) { this.updatedById = updatedById; }

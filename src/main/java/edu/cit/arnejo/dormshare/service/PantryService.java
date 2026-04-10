@@ -28,10 +28,10 @@ public class PantryService {
     }
 
     /**
-     * Get all pantry items.
+     * Get all pantry items for a group.
      */
-    public ApiResponse getAllItems() {
-        List<PantryItemEntity> items = pantryItemRepository.findAllByOrderByCreatedAtDesc();
+    public ApiResponse getAllItems(Long groupId) {
+        List<PantryItemEntity> items = pantryItemRepository.findByGroupIdOrderByCreatedAtDesc(groupId);
         return ApiResponse.ok(items);
     }
 
@@ -47,49 +47,49 @@ public class PantryService {
     }
 
     /**
-     * Get items by status filter.
+     * Get items by status filter within a group.
      */
-    public ApiResponse getItemsByStatus(String status) {
+    public ApiResponse getItemsByStatus(Long groupId, String status) {
         String upperStatus = status.toUpperCase();
         if (!VALID_STATUSES.contains(upperStatus)) {
             return ApiResponse.error("VALID-001", "Validation failed", "Invalid status. Must be IN, LOW, or OUT");
         }
-        List<PantryItemEntity> items = pantryItemRepository.findByStatusOrderByCreatedAtDesc(upperStatus);
+        List<PantryItemEntity> items = pantryItemRepository.findByGroupIdAndStatusOrderByCreatedAtDesc(groupId, upperStatus);
         return ApiResponse.ok(items);
     }
 
     /**
-     * Get items by category filter.
+     * Get items by category filter within a group.
      */
-    public ApiResponse getItemsByCategory(String category) {
-        List<PantryItemEntity> items = pantryItemRepository.findByCategoryIgnoreCaseOrderByCreatedAtDesc(category);
+    public ApiResponse getItemsByCategory(Long groupId, String category) {
+        List<PantryItemEntity> items = pantryItemRepository.findByGroupIdAndCategoryIgnoreCaseOrderByCreatedAtDesc(groupId, category);
         return ApiResponse.ok(items);
     }
 
     /**
-     * Search items by name.
+     * Search items by name within a group.
      */
-    public ApiResponse searchItems(String query) {
-        List<PantryItemEntity> items = pantryItemRepository.findByItemNameContainingIgnoreCaseOrderByCreatedAtDesc(query);
+    public ApiResponse searchItems(Long groupId, String query) {
+        List<PantryItemEntity> items = pantryItemRepository.findByGroupIdAndItemNameContainingIgnoreCaseOrderByCreatedAtDesc(groupId, query);
         return ApiResponse.ok(items);
     }
 
     /**
-     * Get pantry stats (counts by status).
+     * Get pantry stats (counts by status) for a group.
      */
-    public ApiResponse getStats() {
+    public ApiResponse getStats(Long groupId) {
         Map<String, Object> stats = new HashMap<>();
-        stats.put("totalItems", pantryItemRepository.count());
-        stats.put("inStock", pantryItemRepository.countByStatus("IN"));
-        stats.put("lowStock", pantryItemRepository.countByStatus("LOW"));
-        stats.put("outOfStock", pantryItemRepository.countByStatus("OUT"));
+        stats.put("totalItems", pantryItemRepository.countByGroupId(groupId));
+        stats.put("inStock", pantryItemRepository.countByGroupIdAndStatus(groupId, "IN"));
+        stats.put("lowStock", pantryItemRepository.countByGroupIdAndStatus(groupId, "LOW"));
+        stats.put("outOfStock", pantryItemRepository.countByGroupIdAndStatus(groupId, "OUT"));
         return ApiResponse.ok(stats);
     }
 
     /**
-     * Add a new pantry item.
+     * Add a new pantry item to a group.
      */
-    public ApiResponse addItem(PantryItemRequest request, Long userId) {
+    public ApiResponse addItem(PantryItemRequest request, Long userId, Long groupId) {
         // Validate item name
         if (request.getItemName() == null || request.getItemName().trim().isEmpty()) {
             return ApiResponse.error("VALID-001", "Validation failed", "Item name is required");
@@ -120,6 +120,7 @@ public class PantryService {
         item.setCategory(category);
         item.setStatus(status);
         item.setQuantity(quantity);
+        item.setGroupId(groupId);
         item.setAddedById(userId);
         item.setAddedByName(userName);
         item.setUpdatedById(userId);
