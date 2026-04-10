@@ -397,9 +397,11 @@ function Pantry({ user }) {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="pantry-modal-overlay" onClick={() => { 
+        if (!submitting) { setIsModalOpen(false); resetForm(); } 
+      }}>
+        <div className="pantry-modal-content" onClick={e => e.stopPropagation()}>
+          <div className="pantry-modal-header">
               <h2>{editingItem ? 'Edit Item' : 'Add Pantry Item'}</h2>
               <button className="btn-modal-close" onClick={closeModal}>✕</button>
             </div>
@@ -488,8 +490,10 @@ function Pantry({ user }) {
 
       {/* Delete Confirmation Modal */}
       {deleteTarget && (
-        <div className="modal-overlay" onClick={() => setDeleteTarget(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div className="pantry-modal-overlay" onClick={() => {
+        if (!submitting) setDeleteTarget(null)
+      }}>
+        <div className="pantry-modal-content" onClick={e => e.stopPropagation()}>
             <div className="delete-confirm">
               <span className="delete-confirm-icon">⚠️</span>
               <h3>Delete "{deleteTarget.itemName}"?</h3>

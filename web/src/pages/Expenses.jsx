@@ -317,9 +317,9 @@ function Expenses() {
 
       {/* Log Expense Modal */}
       {isModalOpen && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
-          <div className="modal-content">
-            <header className="modal-header">
+        <div className="expenses-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
+          <div className="expenses-modal-content">
+            <header className="expenses-modal-header">
               <h2>Log New Expense</h2>
               <button className="btn-close" onClick={() => setIsModalOpen(false)}>×</button>
             </header>

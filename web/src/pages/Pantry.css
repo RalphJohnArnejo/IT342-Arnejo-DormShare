@@ -438,7 +438,7 @@
 }
 
 /* ===== Modal Overlay ===== */
-.modal-overlay {
+.pantry-modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(26, 26, 26, 0.4);
@@ -455,7 +455,7 @@
   to { opacity: 1; }
 }
 
-.modal-content {
+.pantry-modal-content {
   background: #fff;
   border: 1px solid #e5e0d5;
   border-radius: 28px;
@@ -471,14 +471,14 @@
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.modal-header {
+.pantry-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
 }
 
-.modal-header h2 {
+.pantry-modal-header h2 {
   font-size: 1.6rem;
   font-weight: 800;
   color: #1a1a1a;
@@ -784,7 +784,7 @@
     grid-template-columns: 1fr;
   }
 
-  .modal-content {
+  .pantry-modal-content {
     margin: 1.25rem;
     padding: 1.75rem;
   }
