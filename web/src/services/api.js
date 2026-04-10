@@ -163,5 +163,22 @@ export const getGroupById = async (groupId) => {
   return response.data;
 };
 
+// ==================== USER PROFILE ENDPOINTS ====================
+
+export const getProfile = async () => {
+  const response = await api.get('/users/me');
+  return response.data;
+};
+
+export const updateProfile = async (data) => {
+  const response = await api.patch('/users/me', data);
+  return response.data;
+};
+
+export const changePassword = async (currentPassword, newPassword) => {
+  const response = await api.post('/users/change-password', { currentPassword, newPassword });
+  return response.data;
+};
+
 export { api, authApi };
 export default api;

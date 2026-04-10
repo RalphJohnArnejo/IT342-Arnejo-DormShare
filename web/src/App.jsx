@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Pantry from './pages/Pantry'
 import Expenses from './pages/Expenses'
 import Groups from './pages/Groups'
+import Profile from './pages/Profile'
 import OAuth2Callback from './pages/OAuth2Callback'
 import './App.css'
 
@@ -58,13 +59,7 @@ function AppLayout({ user, token, onLogout }) {
           <Route path="/groups" element={<Groups user={user} />} />
           <Route path="/pantry" element={<Pantry user={user} />} />
           <Route path="/expenses" element={<Expenses user={user} />} />
-          <Route path="/profile" element={
-            <div style={{ padding: '2rem', color: '#94a3b8' }}>
-              <h1 style={{ color: '#f1f5f9', marginBottom: '0.5rem' }}>Profile</h1>
-              <p>Welcome, {user?.firstName} {user?.lastName}</p>
-              <p>Email: {user?.email}</p>
-            </div>
-          } />
+          <Route path="/profile" element={<Profile user={user} />} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </main>
