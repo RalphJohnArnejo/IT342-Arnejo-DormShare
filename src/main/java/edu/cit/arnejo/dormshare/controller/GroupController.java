@@ -59,16 +59,18 @@ public class GroupController {
     }
 
     /**
-     * DELETE /api/groups/leave
-     * Leave the current group.
+     * DELETE /api/groups/leave/{groupId}
+     * Leave a specific group.
      */
-    @DeleteMapping("/leave")
-    public ResponseEntity<ApiResponse> leaveGroup(@AuthenticationPrincipal UserEntity user) {
+    @DeleteMapping("/leave/{groupId}")
+    public ResponseEntity<ApiResponse> leaveGroup(
+            @PathVariable Long groupId,
+            @AuthenticationPrincipal UserEntity user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("AUTH-001", "Unauthorized", "You must be logged in"));
         }
-        ApiResponse result = groupService.leaveGroup(user.getId());
+        ApiResponse result = groupService.leaveGroup(groupId, user.getId());
         if (result.isSuccess()) {
             return ResponseEntity.ok(result);
         }
@@ -77,15 +79,34 @@ public class GroupController {
 
     /**
      * GET /api/groups/my
-     * Get the current user's group info with all members.
+     * Get all groups the user belongs to.
      */
     @GetMapping("/my")
-    public ResponseEntity<ApiResponse> getMyGroup(@AuthenticationPrincipal UserEntity user) {
+    public ResponseEntity<ApiResponse> getMyGroups(@AuthenticationPrincipal UserEntity user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("AUTH-001", "Unauthorized", "You must be logged in"));
         }
-        ApiResponse result = groupService.getMyGroup(user.getId());
+        ApiResponse result = groupService.getMyGroups(user.getId());
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * GET /api/groups/{groupId}
+     * Get a specific group's details.
+     */
+    @GetMapping("/{groupId}")
+    public ResponseEntity<ApiResponse> getGroupById(
+            @PathVariable Long groupId,
+            @AuthenticationPrincipal UserEntity user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("AUTH-001", "Unauthorized", "You must be logged in"));
+        }
+        ApiResponse result = groupService.getGroupById(groupId, user.getId());
+        if (result.isSuccess()) {
+            return ResponseEntity.ok(result);
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(result);
     }
 }

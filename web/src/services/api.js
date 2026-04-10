@@ -136,5 +136,32 @@ export const settleSplit = async (splitId) => {
   return response.data;
 };
 
+// ==================== GROUP ENDPOINTS ====================
+
+export const createGroup = async (name) => {
+  const response = await api.post('/groups', { name });
+  return response.data;
+};
+
+export const joinGroup = async (inviteCode) => {
+  const response = await api.post('/groups/join', { inviteCode });
+  return response.data;
+};
+
+export const leaveGroup = async (groupId) => {
+  const response = await api.delete(`/groups/leave/${groupId}`);
+  return response.data;
+};
+
+export const getMyGroups = async () => {
+  const response = await api.get('/groups/my');
+  return response.data;
+};
+
+export const getGroupById = async (groupId) => {
+  const response = await api.get(`/groups/${groupId}`);
+  return response.data;
+};
+
 export { api, authApi };
 export default api;

@@ -5,6 +5,7 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Pantry from './pages/Pantry'
 import Expenses from './pages/Expenses'
+import Groups from './pages/Groups'
 import OAuth2Callback from './pages/OAuth2Callback'
 import './App.css'
 
@@ -14,6 +15,7 @@ function Sidebar({ user, onLogout }) {
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: '📊' },
+    { path: '/groups', label: 'My Groups', icon: '👥' },
     { path: '/pantry', label: 'Pantry', icon: '🛒' },
     { path: '/expenses', label: 'Expenses', icon: '💰' },
     { path: '/profile', label: 'Profile', icon: '👤' },
@@ -53,6 +55,7 @@ function AppLayout({ user, token, onLogout }) {
       <main className="main-content">
         <Routes>
           <Route path="/dashboard" element={<Dashboard user={user} />} />
+          <Route path="/groups" element={<Groups user={user} />} />
           <Route path="/pantry" element={<Pantry user={user} />} />
           <Route path="/expenses" element={<Expenses user={user} />} />
           <Route path="/profile" element={

@@ -5,7 +5,8 @@ import {
   logExpense, 
   getAllRoommates, 
   getExpenseSummary,
-  settleSplit
+  settleSplit,
+  getMyGroups
 } from '../services/api';
 import './Expenses.css';
 
@@ -22,6 +23,7 @@ function Expenses() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [hasGroup, setHasGroup] = useState(true);
   
   // Form State
   const [description, setDescription] = useState('');
@@ -34,8 +36,24 @@ function Expenses() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
-    fetchData();
+    checkGroupAndFetch();
   }, []);
+
+  const checkGroupAndFetch = async () => {
+    try {
+      const groupRes = await getMyGroups();
+      if (groupRes.success && groupRes.data && groupRes.data.length > 0) {
+        setHasGroup(true);
+        fetchData();
+      } else {
+        setHasGroup(false);
+        setLoading(false);
+      }
+    } catch {
+      setHasGroup(false);
+      setLoading(false);
+    }
+  };
 
   // Auto-dismiss toast after 3 seconds
   useEffect(() => {
@@ -194,6 +212,27 @@ function Expenses() {
     if (!amount || selectedRoommates.length === 0) return 0;
     return (parseFloat(amount) / (selectedRoommates.length + 1)).toFixed(2);
   };
+
+  if (!hasGroup) {
+    return (
+      <div className="expenses-page">
+        <header className="expenses-header">
+          <div>
+            <h1>Shared Expenses</h1>
+            <p className="subtitle">Track and settle roommate costs</p>
+          </div>
+        </header>
+        <div className="empty-ledger" style={{ padding: '3rem 2rem' }}>
+          <span className="empty-icon">👥</span>
+          <p style={{ fontSize: '1.05rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.5rem' }}>Join a group first</p>
+          <p>You need to create or join a dorm group before splitting expenses.</p>
+          <button className="btn-add-expense" onClick={() => window.location.href = '/groups'} style={{ marginTop: '1rem' }}>
+            <span className="btn-icon">→</span> Go to My Groups
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="expenses-page">

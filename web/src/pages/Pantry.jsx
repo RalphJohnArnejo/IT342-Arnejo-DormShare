@@ -5,7 +5,8 @@ import {
   addPantryItem,
   updatePantryItem,
   deletePantryItem,
-  searchPantryItems
+  searchPantryItems,
+  getMyGroups
 } from '../services/api'
 import './Pantry.css'
 
@@ -32,6 +33,7 @@ function Pantry({ user }) {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [toast, setToast] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [hasGroup, setHasGroup] = useState(true)
 
   // Form state
   const [formData, setFormData] = useState({
@@ -72,9 +74,25 @@ function Pantry({ user }) {
   }, [])
 
   useEffect(() => {
-    fetchItems()
-    fetchStats()
-  }, [fetchItems, fetchStats])
+    checkGroupAndFetch()
+  }, [])
+
+  const checkGroupAndFetch = async () => {
+    try {
+      const groupRes = await getMyGroups()
+      if (groupRes.success && groupRes.data && groupRes.data.length > 0) {
+        setHasGroup(true)
+        fetchItems()
+        fetchStats()
+      } else {
+        setHasGroup(false)
+        setLoading(false)
+      }
+    } catch {
+      setHasGroup(false)
+      setLoading(false)
+    }
+  }
 
   // Filter and search items
   const filteredItems = items.filter(item => {
@@ -199,6 +217,28 @@ function Pantry({ user }) {
       case 'OUT': return 'Out of Stock'
       default: return status
     }
+  }
+
+  if (!hasGroup) {
+    return (
+      <div className="pantry-page">
+        <div className="pantry-header">
+          <div>
+            <h1>Shared Pantry</h1>
+            <p className="pantry-header-subtitle">Track communal household items</p>
+          </div>
+        </div>
+        <div className="pantry-empty">
+          <span className="pantry-empty-icon">👥</span>
+          <h3>Join a group first</h3>
+          <p>You need to create or join a dorm group before accessing the shared pantry.</p>
+          <button className="btn-add-item" onClick={() => window.location.href = '/groups'}>
+            <span className="btn-icon">→</span>
+            Go to My Groups
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (

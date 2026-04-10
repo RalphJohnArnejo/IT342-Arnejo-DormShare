@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class GroupService {
@@ -37,12 +38,6 @@ public class GroupService {
     public ApiResponse createGroup(String name, Long userId) {
         if (name == null || name.trim().isEmpty()) {
             return ApiResponse.error("VALID-001", "Validation failed", "Group name is required");
-        }
-
-        // Check if user is already in a group
-        if (membershipRepository.existsByUserId(userId)) {
-            return ApiResponse.error("GROUP-001", "Already in a group",
-                    "You must leave your current group before creating a new one");
         }
 
         // Create group
@@ -70,12 +65,6 @@ public class GroupService {
             return ApiResponse.error("VALID-001", "Validation failed", "Invite code is required");
         }
 
-        // Check if user is already in a group
-        if (membershipRepository.existsByUserId(userId)) {
-            return ApiResponse.error("GROUP-001", "Already in a group",
-                    "You must leave your current group before joining another");
-        }
-
         // Find group by invite code
         Optional<GroupEntity> groupOpt = groupRepository.findByInviteCode(inviteCode.trim().toUpperCase());
         if (groupOpt.isEmpty()) {
@@ -84,6 +73,12 @@ public class GroupService {
         }
 
         GroupEntity group = groupOpt.get();
+
+        // Check if user is already in this specific group
+        if (membershipRepository.existsByUserIdAndGroupId(userId, group.getId())) {
+            return ApiResponse.error("GROUP-001", "Already a member",
+                    "You are already a member of this group");
+        }
 
         // Add user as MEMBER
         GroupMembershipEntity membership = new GroupMembershipEntity();
@@ -96,19 +91,18 @@ public class GroupService {
     }
 
     /**
-     * Leave the current group.
+     * Leave a specific group.
      * If the user is the ADMIN and others remain, promote the next member.
      * If the user is the last member, delete the group.
      */
     @Transactional
-    public ApiResponse leaveGroup(Long userId) {
-        Optional<GroupMembershipEntity> membershipOpt = membershipRepository.findByUserId(userId);
+    public ApiResponse leaveGroup(Long groupId, Long userId) {
+        Optional<GroupMembershipEntity> membershipOpt = membershipRepository.findByUserIdAndGroupId(userId, groupId);
         if (membershipOpt.isEmpty()) {
-            return ApiResponse.error("GROUP-003", "Not in a group", "You are not in any group");
+            return ApiResponse.error("GROUP-003", "Not in this group", "You are not a member of this group");
         }
 
         GroupMembershipEntity membership = membershipOpt.get();
-        Long groupId = membership.getGroupId();
         boolean wasAdmin = "ADMIN".equals(membership.getRole());
 
         // Remove the user
@@ -134,31 +128,63 @@ public class GroupService {
     }
 
     /**
-     * Get the current user's group with all members.
+     * Get all groups the user belongs to.
      */
-    public ApiResponse getMyGroup(Long userId) {
-        Optional<GroupMembershipEntity> membershipOpt = membershipRepository.findByUserId(userId);
-        if (membershipOpt.isEmpty()) {
-            return ApiResponse.ok(null); // No group — frontend handles this
+    public ApiResponse getMyGroups(Long userId) {
+        List<GroupMembershipEntity> memberships = membershipRepository.findByUserId(userId);
+        if (memberships.isEmpty()) {
+            return ApiResponse.ok(new ArrayList<>());
         }
 
-        Long groupId = membershipOpt.get().getGroupId();
+        List<GroupResponse> groups = memberships.stream()
+                .map(m -> groupRepository.findById(m.getGroupId()).orElse(null))
+                .filter(g -> g != null)
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+
+        return ApiResponse.ok(groups);
+    }
+
+    /**
+     * Get a specific group's details.
+     */
+    public ApiResponse getGroupById(Long groupId, Long userId) {
+        // Verify user is a member
+        if (!membershipRepository.existsByUserIdAndGroupId(userId, groupId)) {
+            return ApiResponse.error("GROUP-003", "Not a member", "You are not a member of this group");
+        }
+
         Optional<GroupEntity> groupOpt = groupRepository.findById(groupId);
         if (groupOpt.isEmpty()) {
-            return ApiResponse.error("GROUP-004", "Group not found", "Your group no longer exists");
+            return ApiResponse.error("GROUP-004", "Group not found", "Group no longer exists");
         }
 
         return ApiResponse.ok(mapToResponse(groupOpt.get()));
     }
 
     /**
-     * Get the group ID for a user. Returns null if user is not in any group.
-     * Used internally by other services (Pantry, Expenses).
+     * Get the group ID for a user. For controllers that need a single active group.
+     * If user is in multiple groups, returns the first one.
+     * Returns null if user is not in any group.
      */
     public Long getUserGroupId(Long userId) {
-        return membershipRepository.findByUserId(userId)
-                .map(GroupMembershipEntity::getGroupId)
-                .orElse(null);
+        List<GroupMembershipEntity> memberships = membershipRepository.findByUserId(userId);
+        if (memberships.isEmpty()) {
+            return null;
+        }
+        return memberships.get(0).getGroupId();
+    }
+
+    /**
+     * Get a specific group ID for a user, verifying membership.
+     * Returns null if user is not a member of the given group.
+     */
+    public Long getVerifiedGroupId(Long userId, Long groupId) {
+        if (groupId == null) return getUserGroupId(userId);
+        if (membershipRepository.existsByUserIdAndGroupId(userId, groupId)) {
+            return groupId;
+        }
+        return null;
     }
 
     /**
