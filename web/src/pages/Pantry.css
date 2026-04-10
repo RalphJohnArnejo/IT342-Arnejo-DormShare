@@ -596,7 +596,7 @@
   box-shadow: 0 4px 12px rgba(229, 62, 62, 0.12);
 }
 
-.btn-submit {
+.pantry-modal-content .btn-submit {
   width: 100%;
   padding: 1rem;
   background: linear-gradient(135deg, #c49a3c 0%, #d4a843 100%);
@@ -612,13 +612,13 @@
   box-shadow: 0 4px 12px rgba(196, 154, 60, 0.25);
 }
 
-.btn-submit:hover:not(:disabled) {
+.pantry-modal-content .btn-submit:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(196, 154, 60, 0.35);
   background: linear-gradient(135deg, #b88c32 0%, #c49a3c 100%);
 }
 
-.btn-submit:disabled {
+.pantry-modal-content .btn-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
