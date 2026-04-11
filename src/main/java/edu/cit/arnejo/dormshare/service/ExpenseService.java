@@ -25,13 +25,25 @@ public class ExpenseService {
     private final ExpenseRepository expenseRepository;
     private final ExpenseSplitRepository splitRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
+    private final EmailService emailService;
 
-    public ExpenseService(ExpenseRepository expenseRepository, 
-                          ExpenseSplitRepository splitRepository, 
-                          UserRepository userRepository) {
+    public ExpenseService(ExpenseRepository expenseRepository,
+                          ExpenseSplitRepository splitRepository,
+                          UserRepository userRepository,
+                          NotificationService notificationService,
+                          EmailService emailService) {
         this.expenseRepository = expenseRepository;
         this.splitRepository = splitRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
+        this.emailService = emailService;
+    }
+
+    private String displayName(Long userId) {
+        return userRepository.findById(userId)
+                .map(u -> u.getFirstName() + " " + u.getLastName())
+                .orElse("Someone");
     }
 
     @Transactional
@@ -122,9 +134,12 @@ public class ExpenseService {
     }
 
     @Transactional
-    public ApiResponse settleSplit(Long splitId) {
+    public ApiResponse settleSplit(Long splitId, Long actorUserId) {
         if (splitId == null) {
             return ApiResponse.error("VALID-004", "Missing split ID", "SplitId is required");
+        }
+        if (actorUserId == null) {
+            return ApiResponse.error("AUTH-001", "Unauthorized", "You must be logged in");
         }
         Optional<ExpenseSplitEntity> splitOpt = splitRepository.findById(splitId);
         if (splitOpt.isEmpty()) {
@@ -132,8 +147,66 @@ public class ExpenseService {
         }
 
         ExpenseSplitEntity split = splitOpt.get();
+
+        Optional<ExpenseEntity> expenseOpt = expenseRepository.findById(split.getExpenseId());
+        if (expenseOpt.isEmpty()) {
+            return ApiResponse.error("DB-001", "Expense not found", "Expense for this split does not exist");
+        }
+
+        ExpenseEntity expense = expenseOpt.get();
+        Long debtorUserId = split.getUserId();
+        Long payerUserId = expense.getPaidById();
+
+        boolean actorIsDebtor = debtorUserId != null && debtorUserId.equals(actorUserId);
+        boolean actorIsPayer = payerUserId != null && payerUserId.equals(actorUserId);
+
+        // Allow either the debtor (split owner) OR the payer to mark it settled (matches UI)
+        if (!actorIsDebtor && !actorIsPayer) {
+            return ApiResponse.error("AUTH-002", "Forbidden", "You can only settle your own split or splits for expenses you paid");
+        }
+
+        // Idempotent: if already settled, return OK without duplicating notifications
+        if (Boolean.TRUE.equals(split.getIsSettled())) {
+            return ApiResponse.ok(null);
+        }
+
         split.setIsSettled(true);
         splitRepository.save(split);
+
+        String desc = (expense.getDescription() == null || expense.getDescription().isBlank())
+                ? "an expense"
+                : expense.getDescription();
+
+        // Notifications + receipts
+        if (payerUserId != null && debtorUserId != null && !payerUserId.equals(debtorUserId)) {
+            if (actorIsDebtor) {
+                // Debtor settled: notify payer
+                String settlerName = displayName(actorUserId);
+                notificationService.create(
+                        payerUserId,
+                        "DEBT_SETTLED",
+                        "Debt settled",
+                        settlerName + " settled ₱" + split.getAmountOwed() + " for \"" + desc + "\""
+                );
+
+                UserEntity payer = userRepository.findById(payerUserId).orElse(null);
+                UserEntity debtor = userRepository.findById(debtorUserId).orElse(null);
+                emailService.sendDebtSettledReceipt(payer, debtor, split.getAmountOwed(), expense.getDescription());
+            } else if (actorIsPayer) {
+                // Payer marked it settled: notify debtor
+                String payerName = displayName(actorUserId);
+                notificationService.create(
+                        debtorUserId,
+                        "DEBT_SETTLED",
+                        "Debt settled",
+                        payerName + " marked your ₱" + split.getAmountOwed() + " for \"" + desc + "\" as settled"
+                );
+
+                UserEntity payer = userRepository.findById(payerUserId).orElse(null);
+                UserEntity debtor = userRepository.findById(debtorUserId).orElse(null);
+                emailService.sendDebtMarkedSettledByPayerReceipt(payer, debtor, split.getAmountOwed(), expense.getDescription());
+            }
+        }
 
         return ApiResponse.ok(null);
     }

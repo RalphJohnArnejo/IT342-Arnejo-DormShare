@@ -4,6 +4,8 @@ import edu.cit.arnejo.dormshare.dto.ApiResponse;
 import edu.cit.arnejo.dormshare.dto.PantryItemRequest;
 import edu.cit.arnejo.dormshare.entity.PantryItemEntity;
 import edu.cit.arnejo.dormshare.entity.UserEntity;
+import edu.cit.arnejo.dormshare.entity.GroupMembershipEntity;
+import edu.cit.arnejo.dormshare.repository.GroupMembershipRepository;
 import edu.cit.arnejo.dormshare.repository.PantryItemRepository;
 import edu.cit.arnejo.dormshare.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,8 @@ public class PantryService {
 
     private final PantryItemRepository pantryItemRepository;
     private final UserRepository userRepository;
+    private final GroupMembershipRepository membershipRepository;
+    private final NotificationService notificationService;
 
     private static final Set<String> VALID_STATUSES = Set.of("IN", "LOW", "OUT");
     private static final Set<String> VALID_CATEGORIES = Set.of(
@@ -22,9 +26,21 @@ public class PantryService {
             "Beverages", "Condiments", "Grains", "Frozen", "Cleaning", "Other"
     );
 
-    public PantryService(PantryItemRepository pantryItemRepository, UserRepository userRepository) {
+    public PantryService(PantryItemRepository pantryItemRepository,
+                         UserRepository userRepository,
+                         GroupMembershipRepository membershipRepository,
+                         NotificationService notificationService) {
         this.pantryItemRepository = pantryItemRepository;
         this.userRepository = userRepository;
+        this.membershipRepository = membershipRepository;
+        this.notificationService = notificationService;
+    }
+
+    private void notifyGroupExceptActor(Long groupId, Long actorUserId, String type, String title, String body) {
+        if (groupId == null) return;
+        List<GroupMembershipEntity> memberships = membershipRepository.findByGroupId(groupId);
+        List<Long> userIds = memberships.stream().map(GroupMembershipEntity::getUserId).toList();
+        notificationService.createForUsers(userIds, actorUserId, type, title, body);
     }
 
     /**
@@ -127,6 +143,15 @@ public class PantryService {
         item.setUpdatedByName(userName);
 
         PantryItemEntity saved = pantryItemRepository.save(item);
+
+        notifyGroupExceptActor(
+            groupId,
+            userId,
+            "PANTRY_UPDATED",
+            "Pantry item added",
+            userName + " added \"" + saved.getItemName() + "\" (" + saved.getStatus() + ")"
+        );
+
         return ApiResponse.ok(saved);
     }
 
@@ -174,6 +199,15 @@ public class PantryService {
         item.setUpdatedByName(userName);
 
         PantryItemEntity saved = pantryItemRepository.save(item);
+
+        notifyGroupExceptActor(
+            saved.getGroupId(),
+            userId,
+            "PANTRY_UPDATED",
+            "Pantry item updated",
+            userName + " updated \"" + saved.getItemName() + "\" (" + saved.getStatus() + ")"
+        );
+
         return ApiResponse.ok(saved);
     }
 
@@ -186,7 +220,16 @@ public class PantryService {
             return ApiResponse.error("DB-001", "Resource not found", "Pantry item not found");
         }
 
+        PantryItemEntity existing = itemOpt.get();
         pantryItemRepository.deleteById(itemId);
+
+        notifyGroupExceptActor(
+            existing.getGroupId(),
+            userId,
+            "PANTRY_UPDATED",
+            "Pantry item removed",
+            "A pantry item was removed: \"" + existing.getItemName() + "\""
+        );
         return ApiResponse.ok("Pantry item deleted successfully");
     }
 }

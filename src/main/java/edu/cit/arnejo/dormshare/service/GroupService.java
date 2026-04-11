@@ -22,13 +22,22 @@ public class GroupService {
     private final GroupRepository groupRepository;
     private final GroupMembershipRepository membershipRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public GroupService(GroupRepository groupRepository,
                         GroupMembershipRepository membershipRepository,
-                        UserRepository userRepository) {
+                        UserRepository userRepository,
+                        NotificationService notificationService) {
         this.groupRepository = groupRepository;
         this.membershipRepository = membershipRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
+    }
+
+    private String displayName(Long userId) {
+        return userRepository.findById(userId)
+                .map(u -> u.getFirstName() + " " + u.getLastName())
+                .orElse("Someone");
     }
 
     /**
@@ -86,6 +95,19 @@ public class GroupService {
         membership.setUserId(userId);
         membership.setRole("MEMBER");
         membershipRepository.save(membership);
+
+        // Notify existing members (excluding the joiner)
+        String joinerName = displayName(userId);
+        List<Long> memberIds = membershipRepository.findByGroupId(group.getId()).stream()
+            .map(GroupMembershipEntity::getUserId)
+            .toList();
+        notificationService.createForUsers(
+            memberIds,
+            userId,
+            "GROUP_MEMBER_ADDED",
+            "New member joined",
+            joinerName + " joined the group \"" + group.getName() + "\""
+        );
 
         return ApiResponse.ok(mapToResponse(group));
     }

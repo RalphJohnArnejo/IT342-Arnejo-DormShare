@@ -100,7 +100,7 @@ public class ExpenseController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("AUTH-001", "Unauthorized", "You must be logged in"));
         }
-        ApiResponse result = expenseService.settleSplit(splitId);
+        ApiResponse result = expenseService.settleSplit(splitId, user.getId());
         return ResponseEntity.ok(result);
     }
 

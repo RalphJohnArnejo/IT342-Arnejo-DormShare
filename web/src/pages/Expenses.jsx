@@ -200,10 +200,11 @@ function Expenses() {
         fetchData();
         showToast('Split settled! ✅');
       } else {
-        showToast('Failed to settle split', 'error');
+        showToast(res.error?.details || res.error?.message || 'Failed to settle split', 'error');
       }
     } catch (err) {
-      showToast('Failed to settle expense', 'error');
+      const msg = err.response?.data?.error?.details || err.response?.data?.error?.message || 'Failed to settle expense'
+      showToast(msg, 'error');
     }
   };
 
