@@ -110,12 +110,6 @@
   box-shadow: 0 0 0 3px rgba(196, 154, 60, 0.1);
 }
 
-.selector-hint {
-  font-size: 0.8rem;
-  color: #999;
-  font-weight: 500;
-}
-
 /* ===== Stats Bar ===== */
 .pantry-stats {
   display: grid;

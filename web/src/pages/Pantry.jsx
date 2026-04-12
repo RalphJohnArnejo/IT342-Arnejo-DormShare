@@ -52,10 +52,10 @@ function Pantry({ user }) {
     setTimeout(() => setToast(null), 3000)
   }
 
-  const fetchItems = useCallback(async () => {
+  const fetchItems = useCallback(async (groupId) => {
     try {
       setLoading(true)
-      const result = await getAllPantryItems()
+      const result = await getAllPantryItems(groupId)
       if (result.success) {
         setItems(result.data)
       }
@@ -66,9 +66,9 @@ function Pantry({ user }) {
     }
   }, [])
 
-  const fetchStats = useCallback(async () => {
+  const fetchStats = useCallback(async (groupId) => {
     try {
-      const result = await getPantryStats()
+      const result = await getPantryStats(groupId)
       if (result.success) {
         setStats(result.data)
       }
@@ -90,8 +90,8 @@ function Pantry({ user }) {
         // Set first group as default selected
         const firstGroup = groupRes.data[0]
         setSelectedGroupId(firstGroup.id)
-        fetchItems()
-        fetchStats()
+        fetchItems(firstGroup.id)
+        fetchStats(firstGroup.id)
       } else {
         setHasGroup(false)
         setLoading(false)
@@ -109,8 +109,8 @@ function Pantry({ user }) {
     setActiveFilter('ALL')
     setItems([])
     // Fetch new group's pantry items
-    fetchItems()
-    fetchStats()
+    fetchItems(groupId)
+    fetchStats(groupId)
   }
 
   // Filter and search items
@@ -290,7 +290,6 @@ function Pantry({ user }) {
               </option>
             ))}
           </select>
-          {groups.length > 1 && <span className="selector-hint">You're in {groups.length} groups</span>}
         </div>
       )}
 

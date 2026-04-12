@@ -64,13 +64,15 @@ export const loginUser = async (email, password) => {
 
 // ==================== PANTRY ENDPOINTS ====================
 
-export const getAllPantryItems = async () => {
-  const response = await api.get('/pantry');
+export const getAllPantryItems = async (groupId) => {
+  const url = groupId ? `/pantry?groupId=${groupId}` : '/pantry';
+  const response = await api.get(url);
   return response.data;
 };
 
-export const getPantryStats = async () => {
-  const response = await api.get('/pantry/stats');
+export const getPantryStats = async (groupId) => {
+  const url = groupId ? `/pantry/stats?groupId=${groupId}` : '/pantry/stats';
+  const response = await api.get(url);
   return response.data;
 };
 
@@ -79,18 +81,21 @@ export const getPantryItemById = async (id) => {
   return response.data;
 };
 
-export const getPantryItemsByStatus = async (status) => {
-  const response = await api.get(`/pantry/status/${status}`);
+export const getPantryItemsByStatus = async (status, groupId) => {
+  const url = groupId ? `/pantry/status/${status}?groupId=${groupId}` : `/pantry/status/${status}`;
+  const response = await api.get(url);
   return response.data;
 };
 
-export const getPantryItemsByCategory = async (category) => {
-  const response = await api.get(`/pantry/category/${category}`);
+export const getPantryItemsByCategory = async (category, groupId) => {
+  const url = groupId ? `/pantry/category/${category}?groupId=${groupId}` : `/pantry/category/${category}`;
+  const response = await api.get(url);
   return response.data;
 };
 
-export const searchPantryItems = async (query) => {
-  const response = await api.get(`/pantry/search?q=${encodeURIComponent(query)}`);
+export const searchPantryItems = async (query, groupId) => {
+  const url = groupId ? `/pantry/search?q=${encodeURIComponent(query)}&groupId=${groupId}` : `/pantry/search?q=${encodeURIComponent(query)}`;
+  const response = await api.get(url);
   return response.data;
 };
 

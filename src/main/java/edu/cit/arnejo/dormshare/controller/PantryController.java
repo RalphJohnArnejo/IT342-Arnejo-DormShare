@@ -1,14 +1,24 @@
 package edu.cit.arnejo.dormshare.controller;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import edu.cit.arnejo.dormshare.dto.ApiResponse;
 import edu.cit.arnejo.dormshare.dto.PantryItemRequest;
 import edu.cit.arnejo.dormshare.entity.UserEntity;
 import edu.cit.arnejo.dormshare.service.GroupService;
 import edu.cit.arnejo.dormshare.service.PantryService;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/pantry")
@@ -40,36 +50,40 @@ public class PantryController {
     }
 
     /**
-     * GET /api/pantry
-     * Retrieves all pantry items for the user's group.
+     * GET /api/pantry?groupId=...
+     * Retrieves all pantry items for a group. If groupId is not provided, uses user's primary group.
      */
     @GetMapping
-    public ResponseEntity<ApiResponse> getAllItems(@AuthenticationPrincipal UserEntity user) {
+    public ResponseEntity<ApiResponse> getAllItems(
+            @RequestParam(required = false) Long groupId,
+            @AuthenticationPrincipal UserEntity user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("AUTH-001", "Unauthorized", "You must be logged in"));
         }
-        Long groupId = resolveGroupId(user);
-        if (groupId == null) return noGroupError();
+        Long verifiedGroupId = groupService.getVerifiedGroupId(user.getId(), groupId);
+        if (verifiedGroupId == null) return noGroupError();
 
-        ApiResponse result = pantryService.getAllItems(groupId);
+        ApiResponse result = pantryService.getAllItems(verifiedGroupId);
         return ResponseEntity.ok(result);
     }
 
     /**
-     * GET /api/pantry/stats
-     * Get pantry statistics (counts by status) for the user's group.
+     * GET /api/pantry/stats?groupId=...
+     * Get pantry statistics (counts by status) for a group. If groupId is not provided, uses user's primary group.
      */
     @GetMapping("/stats")
-    public ResponseEntity<ApiResponse> getStats(@AuthenticationPrincipal UserEntity user) {
+    public ResponseEntity<ApiResponse> getStats(
+            @RequestParam(required = false) Long groupId,
+            @AuthenticationPrincipal UserEntity user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("AUTH-001", "Unauthorized", "You must be logged in"));
         }
-        Long groupId = resolveGroupId(user);
-        if (groupId == null) return noGroupError();
+        Long verifiedGroupId = groupService.getVerifiedGroupId(user.getId(), groupId);
+        if (verifiedGroupId == null) return noGroupError();
 
-        ApiResponse result = pantryService.getStats(groupId);
+        ApiResponse result = pantryService.getStats(verifiedGroupId);
         return ResponseEntity.ok(result);
     }
 
@@ -87,21 +101,22 @@ public class PantryController {
     }
 
     /**
-     * GET /api/pantry/status/{status}
-     * Filter items by status (IN, LOW, OUT) within the user's group.
+     * GET /api/pantry/status/{status}?groupId=...
+     * Filter items by status (IN, LOW, OUT) within a group.
      */
     @GetMapping("/status/{status}")
     public ResponseEntity<ApiResponse> getItemsByStatus(
             @PathVariable String status,
+            @RequestParam(required = false) Long groupId,
             @AuthenticationPrincipal UserEntity user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("AUTH-001", "Unauthorized", "You must be logged in"));
         }
-        Long groupId = resolveGroupId(user);
-        if (groupId == null) return noGroupError();
+        Long verifiedGroupId = groupService.getVerifiedGroupId(user.getId(), groupId);
+        if (verifiedGroupId == null) return noGroupError();
 
-        ApiResponse result = pantryService.getItemsByStatus(groupId, status);
+        ApiResponse result = pantryService.getItemsByStatus(verifiedGroupId, status);
         if (result.isSuccess()) {
             return ResponseEntity.ok(result);
         }
@@ -109,40 +124,42 @@ public class PantryController {
     }
 
     /**
-     * GET /api/pantry/category/{category}
-     * Filter items by category within the user's group.
+     * GET /api/pantry/category/{category}?groupId=...
+     * Filter items by category within a group.
      */
     @GetMapping("/category/{category}")
     public ResponseEntity<ApiResponse> getItemsByCategory(
             @PathVariable String category,
+            @RequestParam(required = false) Long groupId,
             @AuthenticationPrincipal UserEntity user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("AUTH-001", "Unauthorized", "You must be logged in"));
         }
-        Long groupId = resolveGroupId(user);
-        if (groupId == null) return noGroupError();
+        Long verifiedGroupId = groupService.getVerifiedGroupId(user.getId(), groupId);
+        if (verifiedGroupId == null) return noGroupError();
 
-        ApiResponse result = pantryService.getItemsByCategory(groupId, category);
+        ApiResponse result = pantryService.getItemsByCategory(verifiedGroupId, category);
         return ResponseEntity.ok(result);
     }
 
     /**
-     * GET /api/pantry/search?q=...
-     * Search items by name within the user's group.
+     * GET /api/pantry/search?q=...&groupId=...
+     * Search items by name within a group.
      */
     @GetMapping("/search")
     public ResponseEntity<ApiResponse> searchItems(
             @RequestParam String q,
+            @RequestParam(required = false) Long groupId,
             @AuthenticationPrincipal UserEntity user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("AUTH-001", "Unauthorized", "You must be logged in"));
         }
-        Long groupId = resolveGroupId(user);
-        if (groupId == null) return noGroupError();
+        Long verifiedGroupId = groupService.getVerifiedGroupId(user.getId(), groupId);
+        if (verifiedGroupId == null) return noGroupError();
 
-        ApiResponse result = pantryService.searchItems(groupId, q);
+        ApiResponse result = pantryService.searchItems(verifiedGroupId, q);
         return ResponseEntity.ok(result);
     }
 
