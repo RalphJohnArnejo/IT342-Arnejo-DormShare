@@ -34,6 +34,10 @@ function Pantry({ user }) {
   const [toast, setToast] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [hasGroup, setHasGroup] = useState(true)
+  
+  // Multi-group support
+  const [groups, setGroups] = useState([])
+  const [selectedGroupId, setSelectedGroupId] = useState(null)
 
   // Form state
   const [formData, setFormData] = useState({
@@ -82,6 +86,10 @@ function Pantry({ user }) {
       const groupRes = await getMyGroups()
       if (groupRes.success && groupRes.data && groupRes.data.length > 0) {
         setHasGroup(true)
+        setGroups(groupRes.data)
+        // Set first group as default selected
+        const firstGroup = groupRes.data[0]
+        setSelectedGroupId(firstGroup.id)
         fetchItems()
         fetchStats()
       } else {
@@ -92,6 +100,17 @@ function Pantry({ user }) {
       setHasGroup(false)
       setLoading(false)
     }
+  }
+
+  const handleGroupChange = (groupId) => {
+    setSelectedGroupId(groupId)
+    // Reset filters when switching groups
+    setSearchQuery('')
+    setActiveFilter('ALL')
+    setItems([])
+    // Fetch new group's pantry items
+    fetchItems()
+    fetchStats()
   }
 
   // Filter and search items
@@ -254,6 +273,26 @@ function Pantry({ user }) {
           Add Item
         </button>
       </div>
+
+      {/* Group Selector */}
+      {groups.length > 1 && (
+        <div className="group-selector-container">
+          <label htmlFor="group-select" className="group-selector-label">View Pantry for:</label>
+          <select
+            id="group-select"
+            className="group-selector"
+            value={selectedGroupId || ''}
+            onChange={(e) => handleGroupChange(Number(e.target.value))}
+          >
+            {groups.map(group => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
+          {groups.length > 1 && <span className="selector-hint">You're in {groups.length} groups</span>}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="pantry-stats">

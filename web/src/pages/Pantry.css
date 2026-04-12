@@ -64,6 +64,58 @@
   font-weight: 400;
 }
 
+/* ===== Group Selector ===== */
+.group-selector-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: #fff8f0;
+  border: 1.5px solid #e8d7c3;
+  border-radius: 14px;
+}
+
+.group-selector-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.group-selector {
+  flex: 1;
+  max-width: 300px;
+  padding: 0.65rem 1rem;
+  background: white;
+  border: 1.5px solid #d9cfc0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #1a1a1a;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.group-selector:hover {
+  border-color: #c49a3c;
+  background: #fffaf5;
+}
+
+.group-selector:focus {
+  outline: none;
+  border-color: #c49a3c;
+  box-shadow: 0 0 0 3px rgba(196, 154, 60, 0.1);
+}
+
+.selector-hint {
+  font-size: 0.8rem;
+  color: #999;
+  font-weight: 500;
+}
+
 /* ===== Stats Bar ===== */
 .pantry-stats {
   display: grid;
