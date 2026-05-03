@@ -137,35 +137,153 @@ function Settlement() {
         description: selectedSettlement.description || `Payment to ${selectedSettlement.payeeName}`,
       })
       if (!intentRes.success) {
-        showToast('Failed to initiate payment', 'error')
+        console.error('Payment intent creation failed:', intentRes)
+        showToast('Failed to initiate payment: ' + (intentRes.error?.message || 'Unknown error'), 'error')
         setProcessingPayment(false)
         return
       }
 
-      const { clientSecret, paymentIntentId, publicKey } = intentRes.data
+      const { clientSecret, paymentIntentId, publicKey, mockMode } = intentRes.data
 
-      // Step 2: Load Stripe and mount payment element
+      // Validate keys
+      if (!publicKey || publicKey.includes('YOUR_') || publicKey === 'pk_test_dummy_key_for_sandbox') {
+        showToast('Stripe is not properly configured. Please contact support.', 'error')
+        console.error('Invalid Stripe public key:', publicKey)
+        setProcessingPayment(false)
+        return
+      }
+
+      // Store refs for the confirm step
+      paymentIntentIdRef.current = paymentIntentId
+
+      // If in mock mode, display a mock payment form
+      if (mockMode) {
+        console.log('Using mock payment mode - displaying mock form')
+        const formContainer = document.getElementById('stripe-payment-form')
+        if (formContainer) {
+          formContainer.innerHTML = `
+            <div style="padding: 0;">
+              <!-- Secure Link Section -->
+              <div style="padding: 12px 0; display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                <span style="color: #1a7f34; font-size: 14px;">🔒</span>
+                <span style="font-size: 13px; color: #1a7f34; font-weight: 600;">Secure, fast checkout with Link</span>
+                <span style="margin-left: auto; font-size: 12px; color: #666; cursor: pointer;">∨</span>
+              </div>
+
+              <!-- Card Number -->
+              <div style="margin-bottom: 12px;">
+                <div style="position: relative;">
+                  <input type="text" placeholder="1234 1234 1234 1234" id="card-number-input"
+                         style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-family: monospace; font-size: 14px; box-sizing: border-box; background: white; color: black; padding-right: 120px;" 
+                         onkeyup="this.value = this.value.replace(/\\s/g, '').replace(/(\\d{4})(?=\\d)/g, '$1 ').slice(0, 19);"
+                         oninput="this.value = this.value.replace(/\\s/g, '').replace(/(\\d{4})(?=\\d)/g, '$1 ').slice(0, 19);" />
+                  <!-- Card logos -->
+                  <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; gap: 3px; pointer-events: none;">
+                    <!-- Visa -->
+                    <svg width="32" height="20" viewBox="0 0 32 20" style="border-radius: 3px;">
+                      <rect width="32" height="20" fill="#1A1F71" rx="2"/>
+                      <text x="16" y="13" font-size="9" font-weight="900" fill="white" text-anchor="middle" font-family="Arial, sans-serif">VISA</text>
+                      <rect x="4" y="15" width="24" height="2" fill="#FFB81C" rx="1"/>
+                    </svg>
+                    <!-- Mastercard -->
+                    <svg width="32" height="20" viewBox="0 0 32 20" style="border-radius: 3px;">
+                      <rect width="32" height="20" fill="white" rx="2"/>
+                      <circle cx="11" cy="10" r="6.5" fill="#EB001B"/>
+                      <circle cx="21" cy="10" r="6.5" fill="#F79E1B"/>
+                    </svg>
+                    <!-- American Express -->
+                    <svg width="32" height="20" viewBox="0 0 32 20" style="border-radius: 3px;">
+                      <rect width="32" height="20" fill="#006FCF" rx="2"/>
+                      <text x="16" y="13" font-size="8" font-weight="900" fill="white" text-anchor="middle" font-family="Arial, sans-serif">AMEX</text>
+                    </svg>
+                    <!-- Discover -->
+                    <svg width="32" height="20" viewBox="0 0 32 20" style="border-radius: 3px;">
+                      <rect width="32" height="20" fill="#FF6000" rx="2"/>
+                      <text x="16" y="13" font-size="7" font-weight="900" fill="white" text-anchor="middle" font-family="Arial, sans-serif">DISCOVER</text>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Expiry and CVC -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                  <input type="text" placeholder="MM/YY" id="expiry-input"
+                         style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; background: white; color: black;" 
+                         onkeyup="this.value = this.value.replace(/\\D/g, '').replace(/(\\d{2})(?=\\d)/, '$1/').slice(0, 5);"
+                         oninput="this.value = this.value.replace(/\\D/g, '').replace(/(\\d{2})(?=\\d)/, '$1/').slice(0, 5);" />
+                </div>
+                <div style="position: relative;">
+                  <input type="text" placeholder="CVC"
+                         style="width: 100%; padding: 12px; padding-right: 32px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; background: white;" />
+                  <!-- Card icon with 123 badge -->
+                  <svg style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; pointer-events: none;" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5">
+                    <!-- Card outline -->
+                    <rect x="2" y="4" width="20" height="16" rx="2" ry="2" stroke="#999" fill="none"/>
+                    <!-- Card stripe -->
+                    <line x1="2" y1="9" x2="22" y2="9" stroke="#999"/>
+                    <!-- 123 badge at bottom right -->
+                    <circle cx="18" cy="16" r="5" fill="#f5f5f5" stroke="#ccc" stroke-width="1"/>
+                    <text x="18" y="17.5" font-size="8" font-weight="bold" fill="#666" text-anchor="middle" font-family="Arial">123</text>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Country -->
+              <div style="margin-bottom: 16px;">
+                <select style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; background: white; cursor: pointer;">
+                  <option>Philippines</option>
+                  <option>United States</option>
+                  <option>Canada</option>
+                  <option>United Kingdom</option>
+                  <option>Singapore</option>
+                  <option>Thailand</option>
+                </select>
+              </div>
+            </div>
+          `
+        }
+        stripeRef.current = { _mockMode: true, confirmPayment: () => ({ error: null }) }
+        elementsRef.current = true
+        setStripeLoaded(true)
+        setProcessingPayment(false)
+        return
+      }
+
+      // Step 2: Load real Stripe for production
       const stripe = await loadStripe(publicKey)
+      
+      if (!stripe) {
+        console.error('Failed to load Stripe with public key:', publicKey)
+        showToast('Failed to load payment processor', 'error')
+        setProcessingPayment(false)
+        return
+      }
+
       const elements = stripe.elements({ clientSecret })
       const paymentElement = elements.create('payment')
 
       const formContainer = document.getElementById('stripe-payment-form')
-      if (formContainer) {
-        formContainer.innerHTML = ''
-        paymentElement.mount(formContainer)
+      if (!formContainer) {
+        console.error('Payment form container not found in DOM')
+        showToast('Payment form unavailable', 'error')
+        setProcessingPayment(false)
+        return
       }
+
+      formContainer.innerHTML = ''
+      paymentElement.mount(formContainer)
 
       // Store refs for the confirm step
       stripeRef.current = stripe
       elementsRef.current = elements
-      paymentIntentIdRef.current = paymentIntentId
 
       // Form is loaded — enable the confirm button
       setStripeLoaded(true)
       setProcessingPayment(false)
     } catch (err) {
       console.error('Stripe payment error:', err)
-      showToast('Payment processing failed', 'error')
+      showToast('Payment processing failed: ' + (err.message || 'Unknown error'), 'error')
       setProcessingPayment(false)
     }
   }
@@ -175,33 +293,46 @@ function Settlement() {
 
     setProcessingPayment(true)
     try {
-      const { error } = await stripeRef.current.confirmPayment({
-        elements: elementsRef.current,
-        confirmParams: {
-          return_url: `${window.location.origin}/settlement?status=success`,
-        },
-        redirect: 'if_required',
-      })
+      // Check if we're in mock mode
+      const isMockMode = stripeRef.current._mockMode
 
-      if (error) {
-        showToast(error.message, 'error')
-        setProcessingPayment(false)
+      if (isMockMode) {
+        console.log('Using mock payment confirmation')
+        // In mock mode, skip Stripe confirmation and go directly to backend
       } else {
-        // Confirm on backend
-        const confirmRes = await confirmPayment(paymentIntentIdRef.current, selectedSettlement.id)
-        if (confirmRes.success) {
-          showToast('Payment successful!', 'success')
-          setShowPaymentModal(false)
-          setStripeLoaded(false)
-          fetchSettlementData()
-        } else {
-          showToast('Payment confirmation failed', 'error')
+        // Real Stripe confirmation
+        const { error } = await stripeRef.current.confirmPayment({
+          elements: elementsRef.current,
+          confirmParams: {
+            return_url: `${window.location.origin}/settlement?status=success`,
+          },
+          redirect: 'if_required',
+        })
+
+        if (error) {
+          showToast(error.message, 'error')
+          setProcessingPayment(false)
+          return
         }
-        setProcessingPayment(false)
       }
+
+      // Confirm on backend
+      console.log('Confirming payment with settlementId:', selectedSettlement.id, 'paymentIntentId:', paymentIntentIdRef.current)
+      const confirmRes = await confirmPayment(paymentIntentIdRef.current, selectedSettlement.id)
+      console.log('Confirmation response:', confirmRes)
+      
+      if (confirmRes.success) {
+        showToast('Payment successful!', 'success')
+        setShowPaymentModal(false)
+        setStripeLoaded(false)
+        fetchSettlementData()
+      } else {
+        showToast('Payment confirmation failed: ' + (confirmRes.error?.message || 'Unknown error'), 'error')
+      }
+      setProcessingPayment(false)
     } catch (err) {
       console.error('Stripe confirm error:', err)
-      showToast('Payment confirmation failed', 'error')
+      showToast('Payment confirmation failed: ' + (err.message || 'Unknown error'), 'error')
       setProcessingPayment(false)
     }
   }

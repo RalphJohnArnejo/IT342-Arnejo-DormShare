@@ -285,7 +285,7 @@ function Groups({ user }) {
         <div className="modal-overlay" onClick={() => setLeaveTarget(null)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="delete-confirm">
-              <span className="delete-confirm-icon"><AlertTriangle size={32} /></span>
+              <span className="delete-confirm-icon"><AlertTriangle size={32} color="#c49a3c" /></span>
               <h3>Leave "{leaveTarget.name}"?</h3>
               <p>You will no longer have access to this group's pantry and expenses. You can rejoin later with an invite code.</p>
               <div className="delete-confirm-actions">

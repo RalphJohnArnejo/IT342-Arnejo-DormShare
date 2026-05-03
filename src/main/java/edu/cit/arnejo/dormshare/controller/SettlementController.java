@@ -179,25 +179,38 @@ public class SettlementController {
                         request.getPaymentMethodId()
                 );
             } else {
-                // Just retrieve the current status
+                // Just retrieve the current status or mark as succeeded in mock mode
                 confirmResult = stripeService.getPaymentIntentStatus(request.getPaymentIntentId());
+                
+                // In mock mode, auto-succeed the payment
+                if (confirmResult.containsKey("mockMode") && (boolean)confirmResult.get("mockMode")) {
+                    confirmResult.put("status", "succeeded");
+                }
             }
 
             // Check if payment was successful
             boolean isSuccessful = "succeeded".equals(confirmResult.get("status"));
             if (isSuccessful) {
                 // Mark settlement as settled in database
-                try {
-                    Long splitId = Long.parseLong(request.getSettlementId());
-                    expenseService.settleSplit(splitId, user.getId());
-                    confirmResult.put("message", "Payment confirmed and split marked as settled successfully");
-                } catch (NumberFormatException e) {
-                    confirmResult.put("message", "Payment confirmed but failed to mark split as settled: invalid split ID");
+                if (request.getSettlementId() != null && !request.getSettlementId().isEmpty()) {
+                    try {
+                        Long splitId = Long.parseLong(request.getSettlementId());
+                        expenseService.settleSplit(splitId, user.getId());
+                        confirmResult.put("message", "Payment confirmed and split marked as settled successfully");
+                    } catch (NumberFormatException e) {
+                        confirmResult.put("message", "Payment confirmed but failed to mark split as settled: invalid split ID format");
+                    } catch (Exception e) {
+                        confirmResult.put("message", "Payment confirmed but error marking split as settled: " + e.getMessage());
+                    }
+                } else {
+                    confirmResult.put("message", "Payment confirmed (no settlement ID provided)");
                 }
             }
 
             return ResponseEntity.ok(ApiResponse.ok(confirmResult));
         } catch (Exception e) {
+            java.util.logging.Logger.getLogger(getClass().getName()).log(java.util.logging.Level.SEVERE, 
+                    "Payment confirmation error", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("STRIPE-003", "Payment confirmation failed", e.getMessage()));
         }
