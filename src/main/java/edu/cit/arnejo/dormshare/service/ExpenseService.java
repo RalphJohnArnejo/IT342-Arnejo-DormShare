@@ -1,5 +1,16 @@
 package edu.cit.arnejo.dormshare.service;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import edu.cit.arnejo.dormshare.dto.ApiResponse;
 import edu.cit.arnejo.dormshare.dto.ExpenseRequest;
 import edu.cit.arnejo.dormshare.dto.ExpenseResponse;
@@ -10,14 +21,6 @@ import edu.cit.arnejo.dormshare.entity.UserEntity;
 import edu.cit.arnejo.dormshare.repository.ExpenseRepository;
 import edu.cit.arnejo.dormshare.repository.ExpenseSplitRepository;
 import edu.cit.arnejo.dormshare.repository.UserRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class ExpenseService {
@@ -250,4 +253,142 @@ public class ExpenseService {
 
         return res;
     }
+
+    /**
+     * Get ledger summary showing who owes whom
+     */
+    public ApiResponse getLedgerSummary(Long groupId, Long currentUserId) {
+        try {
+            Map<String, Object> summary = new HashMap<>();
+            List<Map<String, Object>> debts = new ArrayList<>();
+
+            // Get all expenses for this group
+            List<ExpenseEntity> expenses = expenseRepository.findByGroupIdOrderByDateDesc(groupId);
+            
+            Map<String, Double> userBalances = new HashMap<>();
+
+            for (ExpenseEntity expense : expenses) {
+                Long payerId = expense.getPaidById();
+                if (payerId == null) continue;
+
+                List<ExpenseSplitEntity> splits = splitRepository.findByExpenseId(expense.getId());
+                
+                for (ExpenseSplitEntity split : splits) {
+                    if (split.getIsSettled()) continue; // Skip settled splits
+                    
+                    Long debtorId = split.getUserId();
+                    if (debtorId.equals(payerId)) continue; // Skip payer's own split
+
+                    // Add debt record
+                    UserEntity debtor = userRepository.findById(debtorId).orElse(null);
+                    UserEntity creditor = userRepository.findById(payerId).orElse(null);
+
+                    Map<String, Object> debt = new HashMap<>();
+                    debt.put("fromUserId", debtorId);
+                    debt.put("fromUserName", debtor != null ? debtor.getFirstName() + " " + debtor.getLastName() : "Unknown");
+                    debt.put("toUserId", payerId);
+                    debt.put("toUserName", creditor != null ? creditor.getFirstName() + " " + creditor.getLastName() : "Unknown");
+                    debt.put("amount", split.getAmountOwed().doubleValue());
+                    debt.put("status", "PENDING");
+
+                    debts.add(debt);
+
+                    // Track user balances
+                    String debtorKey = String.valueOf(debtorId);
+                    userBalances.put(debtorKey, userBalances.getOrDefault(debtorKey, 0.0) - split.getAmountOwed().doubleValue());
+
+                    String creditorKey = String.valueOf(payerId);
+                    userBalances.put(creditorKey, userBalances.getOrDefault(creditorKey, 0.0) + split.getAmountOwed().doubleValue());
+                }
+            }
+
+            summary.put("groupId", groupId);
+            summary.put("debts", debts);
+            summary.put("userBalances", userBalances);
+            summary.put("timestamp", System.currentTimeMillis());
+
+            return ApiResponse.ok(summary);
+        } catch (Exception e) {
+            return ApiResponse.error("EXPENSE-001", "Failed to get ledger summary", e.getMessage());
+        }
+    }
+
+    /**
+     * Get ledger history (settled transactions)
+     */
+    public ApiResponse getLedgerHistory(Long groupId) {
+        try {
+            List<Map<String, Object>> history = new ArrayList<>();
+
+            List<ExpenseEntity> expenses = expenseRepository.findByGroupIdOrderByDateDesc(groupId);
+            
+            for (ExpenseEntity expense : expenses) {
+                List<ExpenseSplitEntity> splits = splitRepository.findByExpenseId(expense.getId());
+                
+                for (ExpenseSplitEntity split : splits) {
+                    if (!split.getIsSettled()) continue; // Only settled
+                    
+                    UserEntity user = userRepository.findById(split.getUserId()).orElse(null);
+                    UserEntity payer = userRepository.findById(expense.getPaidById()).orElse(null);
+
+                    Map<String, Object> record = new HashMap<>();
+                    record.put("expenseId", expense.getId());
+                    record.put("description", expense.getDescription());
+                    record.put("amount", split.getAmountOwed().doubleValue());
+                    record.put("userName", user != null ? user.getFirstName() + " " + user.getLastName() : "Unknown");
+                    record.put("payerName", payer != null ? payer.getFirstName() + " " + payer.getLastName() : "Unknown");
+                    record.put("settledAt", expense.getDate());
+                    record.put("status", "SETTLED");
+
+                    history.add(record);
+                }
+            }
+
+            return ApiResponse.ok(history);
+        } catch (Exception e) {
+            return ApiResponse.error("EXPENSE-002", "Failed to get ledger history", e.getMessage());
+        }
+    }
+
+    /**
+     * Initiate a payment between users
+     */
+    @Transactional
+    public ApiResponse initiatePayment(Long payerId, Long payeeId, Double amount, Long groupId) {
+        try {
+            if (payeeId == null || payeeId.equals(payerId)) {
+                return ApiResponse.error("VALID-005", "Invalid payee", "Payee cannot be the same as payer");
+            }
+
+            UserEntity payee = userRepository.findById(payeeId).orElse(null);
+            if (payee == null) {
+                return ApiResponse.error("USER-001", "User not found", "Payee does not exist");
+            }
+
+            // Create a notification about the payment initiation
+            String payerName = userRepository.findById(payerId)
+                    .map(u -> u.getFirstName() + " " + u.getLastName())
+                    .orElse("Someone");
+
+            notificationService.create(
+                    payeeId,
+                    "PAYMENT_INITIATED",
+                    "Payment received",
+                    payerName + " initiated a payment of ₱" + amount
+            );
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("paymentId", "PAY_" + System.currentTimeMillis());
+            response.put("payerId", payerId);
+            response.put("payeeId", payeeId);
+            response.put("amount", amount);
+            response.put("status", "INITIATED");
+            response.put("createdAt", System.currentTimeMillis());
+
+            return ApiResponse.ok(response);
+        } catch (Exception e) {
+            return ApiResponse.error("PAYMENT-001", "Failed to initiate payment", e.getMessage());
+        }
+    }
 }
+

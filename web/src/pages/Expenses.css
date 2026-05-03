@@ -109,6 +109,8 @@
   color: #1a1a1a;
 }
 
+.summary-card.owed .value { color: #16a34a; }
+.summary-card.owe .value { color: #c49a3c; }
 .summary-card .value.positive { color: #2f855a; }
 .summary-card .value.negative { color: #c53030; }
 

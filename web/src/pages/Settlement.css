@@ -334,6 +334,8 @@
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
+  color: #c49a3c;
+  font-weight: 500;
 }
 
 .payment-method-selector label:hover {
@@ -348,7 +350,7 @@
 }
 
 .payment-method-selector label span {
-  color: #f1f5f9;
+  color: #c49a3c;
   font-weight: 500;
 }
 

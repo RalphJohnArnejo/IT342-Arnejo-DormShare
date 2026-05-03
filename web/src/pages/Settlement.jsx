@@ -69,7 +69,25 @@ function Settlement() {
       ])
 
       if (summaryRes.success) {
-        setSettlements(summaryRes.data || [])
+        // Handle new ledger summary format
+        const summaryData = summaryRes.data
+        if (summaryData && summaryData.debts && Array.isArray(summaryData.debts)) {
+          // Convert debts array into settlement-like objects
+          const settlements = summaryData.debts.map(debt => ({
+            id: `${debt.fromUserId}-${debt.toUserId}`,
+            payerId: debt.fromUserId,
+            payerName: debt.fromUserName,
+            payeeId: debt.toUserId,
+            payeeName: debt.toUserName,
+            amount: debt.amount,
+            status: debt.status,
+            description: `Settlement between ${debt.fromUserName} and ${debt.toUserName}`
+          }))
+          setSettlements(settlements)
+        } else {
+          // Fallback for old format
+          setSettlements(summaryData || [])
+        }
       }
       if (historyRes.success) {
         setSettlementHistory(historyRes.data || [])
