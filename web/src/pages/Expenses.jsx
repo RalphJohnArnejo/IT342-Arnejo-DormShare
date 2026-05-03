@@ -33,6 +33,12 @@ function Expenses() {
   const [splitType, setSplitType] = useState('equal');
   const [customAmounts, setCustomAmounts] = useState({});
 
+  // OCR Preview State
+  const [receiptImage, setReceiptImage] = useState(null);
+  const [extractedData, setExtractedData] = useState(null);
+  const [showOcrPreview, setShowOcrPreview] = useState(false);
+  const [ocrRawText, setOcrRawText] = useState('');
+
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
@@ -94,29 +100,62 @@ function Expenses() {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Create image preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setReceiptImage(event.target.result);
+    };
+    reader.readAsDataURL(file);
+
     setOcrLoading(true);
     try {
       const worker = await createWorker('eng');
       const { data: { text } } = await worker.recognize(file);
       await worker.terminate();
 
+      setOcrRawText(text);
+
       // Simple regex to find the largest currency-like number
       const moneyRegex = /₱?\s?(\d+[\.,]\d{2})/g;
       const matches = [...text.matchAll(moneyRegex)];
+      
+      let detectedAmount = '';
       if (matches.length > 0) {
         const amounts = matches.map(m => parseFloat(m[1].replace(',', '.')));
         const maxAmount = Math.max(...amounts);
-        setAmount(maxAmount.toFixed(2));
-        showToast(`Detected amount: ₱${maxAmount.toFixed(2)}`, 'success');
+        detectedAmount = maxAmount.toFixed(2);
       }
       
       // Try to guess description from first line
-      const firstLine = text.split('\n')[0].trim();
-      if (firstLine.length > 3) setDescription(firstLine);
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      const detectedDescription = lines.length > 0 ? lines[0] : '';
+
+      // Detect store/merchant name
+      const merchantNames = ['store', 'market', 'shop', 'mall', 'grocery', 'pharmacy'];
+      let merchant = '';
+      for (const line of lines) {
+        if (merchantNames.some(name => line.toLowerCase().includes(name))) {
+          merchant = line;
+          break;
+        }
+      }
+
+      const extracted = {
+        amount: detectedAmount,
+        description: detectedDescription,
+        merchant: merchant,
+        detectedAt: new Date().toLocaleTimeString(),
+        confidence: 'high',
+      };
+
+      setExtractedData(extracted);
+      setShowOcrPreview(true);
+      showToast(`Receipt scanned! Review and confirm details.`, 'success');
       
     } catch (err) {
       console.error('OCR Error:', err);
       showToast('Failed to process receipt image.', 'error');
+      setShowOcrPreview(false);
     } finally {
       setOcrLoading(false);
     }
@@ -190,6 +229,26 @@ function Expenses() {
     setSelectedRoommates([]);
     setSplitType('equal');
     setCustomAmounts({});
+    setReceiptImage(null);
+    setExtractedData(null);
+    setShowOcrPreview(false);
+    setOcrRawText('');
+  };
+
+  const handleConfirmOcr = () => {
+    if (extractedData) {
+      if (extractedData.amount) setAmount(extractedData.amount);
+      if (extractedData.description) setDescription(extractedData.description);
+      showToast('Receipt data applied! ✅');
+    }
+    setShowOcrPreview(false);
+  };
+
+  const handleCancelOcr = () => {
+    setReceiptImage(null);
+    setExtractedData(null);
+    setShowOcrPreview(false);
+    setOcrRawText('');
   };
 
   const handleSettle = async (splitId) => {
@@ -470,6 +529,83 @@ function Expenses() {
       {toast && (
         <div className={`toast ${toast.type}`} key={Date.now()}>
           {toast.type === 'success' ? '✅' : '❌'} {toast.message}
+        </div>
+      )}
+
+      {/* OCR Preview Modal */}
+      {showOcrPreview && extractedData && receiptImage && (
+        <div className="ocr-preview-overlay" onClick={handleCancelOcr}>
+          <div className="ocr-preview-modal" onClick={(e) => e.stopPropagation()}>
+            <header className="ocr-preview-header">
+              <h2>📸 Receipt Preview</h2>
+              <button className="btn-close" onClick={handleCancelOcr}>×</button>
+            </header>
+
+            <div className="ocr-preview-content">
+              <div className="receipt-image-section">
+                <img src={receiptImage} alt="Receipt" className="receipt-preview-img" />
+                <p className="image-info">Detected at {extractedData.detectedAt}</p>
+              </div>
+
+              <div className="extracted-data-section">
+                <h3>📊 Extracted Data</h3>
+                
+                <div className="extracted-item">
+                  <label>Amount:</label>
+                  <div className="extracted-display">
+                    <span className="value-text">₱{extractedData.amount || 'Not detected'}</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={extractedData.amount}
+                      onChange={(e) => setExtractedData({...extractedData, amount: e.target.value})}
+                      className="edit-input"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+
+                <div className="extracted-item">
+                  <label>Description:</label>
+                  <div className="extracted-display">
+                    <span className="value-text">{extractedData.description || 'Not detected'}</span>
+                    <input
+                      type="text"
+                      value={extractedData.description}
+                      onChange={(e) => setExtractedData({...extractedData, description: e.target.value})}
+                      className="edit-input"
+                      placeholder="e.g. Grocery Store"
+                    />
+                  </div>
+                </div>
+
+                {extractedData.merchant && (
+                  <div className="extracted-item">
+                    <label>Store/Merchant:</label>
+                    <div className="extracted-display">
+                      <span className="value-text">{extractedData.merchant}</span>
+                    </div>
+                  </div>
+                )}
+
+                <details className="raw-text-section">
+                  <summary>📄 View Raw Text</summary>
+                  <div className="raw-text-box">
+                    <pre>{ocrRawText}</pre>
+                  </div>
+                </details>
+              </div>
+            </div>
+
+            <footer className="ocr-preview-footer">
+              <button className="btn-cancel" onClick={handleCancelOcr}>
+                ↻ Retake Photo
+              </button>
+              <button className="btn-confirm" onClick={handleConfirmOcr}>
+                ✓ Use This Data
+              </button>
+            </footer>
+          </div>
         </div>
       )}
     </div>
