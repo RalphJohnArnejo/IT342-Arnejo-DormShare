@@ -9,6 +9,7 @@ import Groups from './pages/Groups'
 import Profile from './pages/Profile'
 import Settlement from './pages/Settlement'
 import AdminDashboard from './pages/AdminDashboard'
+import TestRunner from './pages/TestRunner'
 import OAuth2Callback from './pages/OAuth2Callback'
 import './App.css'
 
@@ -71,6 +72,10 @@ function AppLayout({ user, token, onLogout }) {
           <Route path="/settlement" element={<Settlement user={user} />} />
           <Route path="/profile" element={<Profile user={user} />} />
           <Route path="/admin" element={<AdminDashboard user={user} />} />
+<<<<<<< HEAD
+=======
+          <Route path="/test-runner" element={<TestRunner />} />
+>>>>>>> feature/phase3-web-api-integration
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </main>
