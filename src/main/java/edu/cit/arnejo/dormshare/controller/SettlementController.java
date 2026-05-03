@@ -15,9 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import edu.cit.arnejo.dormshare.dto.ApiResponse;
 import edu.cit.arnejo.dormshare.dto.PaymentInitiateRequest;
+import edu.cit.arnejo.dormshare.dto.StripePaymentConfirmRequest;
 import edu.cit.arnejo.dormshare.entity.UserEntity;
 import edu.cit.arnejo.dormshare.service.ExpenseService;
 import edu.cit.arnejo.dormshare.service.GroupService;
+import edu.cit.arnejo.dormshare.service.StripeService;
 
 @RestController
 @RequestMapping("/api")
@@ -26,10 +28,12 @@ public class SettlementController {
 
     private final ExpenseService expenseService;
     private final GroupService groupService;
+    private final StripeService stripeService;
 
-    public SettlementController(ExpenseService expenseService, GroupService groupService) {
+    public SettlementController(ExpenseService expenseService, GroupService groupService, StripeService stripeService) {
         this.expenseService = expenseService;
         this.groupService = groupService;
+        this.stripeService = stripeService;
     }
 
     /**
@@ -112,7 +116,7 @@ public class SettlementController {
 
     /**
      * POST /api/payments/stripe/intent
-     * Returns Stripe payment intent client secret
+     * Returns Stripe payment intent client secret for frontend Stripe.js integration
      */
     @PostMapping("/payments/stripe/intent")
     public ResponseEntity<ApiResponse> getStripeIntent(
@@ -123,31 +127,75 @@ public class SettlementController {
                     .body(ApiResponse.error("AUTH-001", "Unauthorized", "You must be logged in"));
         }
 
-        // For now, return a mock response. In production, integrate with Stripe API
-        java.util.Map<String, Object> data = new java.util.HashMap<>();
-        data.put("clientSecret", "pi_mock_" + System.currentTimeMillis());
-        data.put("amount", request.getAmount());
-        return ResponseEntity.ok(ApiResponse.ok(data));
+        if (request.getAmount() == null || request.getAmount() <= 0) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("VALID-001", "Invalid amount", "Amount must be greater than 0"));
+        }
+
+        try {
+            // Convert amount to cents for Stripe (PHP 10.00 = 1000 cents)
+            Long amountInCents = Math.round(request.getAmount() * 100);
+            
+            java.util.Map<String, Object> paymentIntent = stripeService.createPaymentIntent(
+                    amountInCents,
+                    user.getId(),
+                    request.getPayeeId(),
+                    request.getDescription() != null ? request.getDescription() : "DormShare Payment"
+            );
+
+            return ResponseEntity.ok(ApiResponse.ok(paymentIntent));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("STRIPE-001", "Payment intent creation failed", e.getMessage()));
+        }
     }
 
     /**
      * POST /api/payments/stripe/confirm
-     * Confirms Stripe payment
+     * Confirms Stripe payment with payment method
+     * Frontend should send paymentIntentId and paymentMethodId from Stripe.js
      */
     @PostMapping("/payments/stripe/confirm")
     public ResponseEntity<ApiResponse> confirmStripePayment(
-            @RequestBody PaymentInitiateRequest request,
+            @RequestBody StripePaymentConfirmRequest request,
             @AuthenticationPrincipal UserEntity user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("AUTH-001", "Unauthorized", "You must be logged in"));
         }
 
-        // For now, mark settlement as settled
-        java.util.Map<String, Object> data = new java.util.HashMap<>();
-        data.put("status", "SETTLED");
-        data.put("message", "Payment confirmed successfully");
-        return ResponseEntity.ok(ApiResponse.ok(data));
+        if (request.getPaymentIntentId() == null || request.getPaymentIntentId().isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("STRIPE-002", "Missing payment intent ID", 
+                            "paymentIntentId is required"));
+        }
+
+        try {
+            // If paymentMethodId provided, confirm with it. Otherwise just check status.
+            java.util.Map<String, Object> confirmResult;
+            if (request.getPaymentMethodId() != null && !request.getPaymentMethodId().isEmpty()) {
+                confirmResult = stripeService.confirmPaymentIntent(
+                        request.getPaymentIntentId(),
+                        request.getPaymentMethodId()
+                );
+            } else {
+                // Just retrieve the current status
+                confirmResult = stripeService.getPaymentIntentStatus(request.getPaymentIntentId());
+            }
+
+            // Check if payment was successful
+            boolean isSuccessful = "succeeded".equals(confirmResult.get("status"));
+            if (isSuccessful) {
+                // Mark settlement as settled in database
+                // TODO: Update settlement entity with status = SETTLED
+                confirmResult.put("message", "Payment confirmed successfully");
+            }
+
+            return ResponseEntity.ok(ApiResponse.ok(confirmResult));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("STRIPE-003", "Payment confirmation failed", e.getMessage()));
+        }
     }
 
     /**
