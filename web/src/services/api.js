@@ -209,5 +209,91 @@ export const markAllNotificationsRead = async () => {
   return response.data;
 };
 
+// ==================== SETTLEMENT & PAYMENT ENDPOINTS ====================
+
+export const getSettlementSummary = async (groupId) => {
+  const url = groupId ? `/ledger/summary?groupId=${groupId}` : '/ledger/summary';
+  const response = await api.get(url);
+  return response.data;
+};
+
+export const getSettlementHistory = async (groupId) => {
+  const url = groupId ? `/ledger/history?groupId=${groupId}` : '/ledger/history';
+  const response = await api.get(url);
+  return response.data;
+};
+
+export const initiatePayment = async (payeeId, amount, groupId) => {
+  const response = await api.post('/payments/initiate', {
+    payeeId,
+    amount,
+    groupId,
+  });
+  return response.data;
+};
+
+export const getStripeClientSecret = async (settlementId) => {
+  const response = await api.post('/payments/stripe/intent', { settlementId });
+  return response.data;
+};
+
+export const confirmPayment = async (paymentIntentId, settlementId) => {
+  const response = await api.post('/payments/stripe/confirm', {
+    paymentIntentId,
+    settlementId,
+  });
+  return response.data;
+};
+
+export const uploadPaymentProof = async (settlementId, proofFile) => {
+  const formData = new FormData();
+  formData.append('file', proofFile);
+  const response = await api.post(`/settle/proof/${settlementId}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+export const verifyPaymentProof = async (settlementId, action) => {
+  const response = await api.patch(`/settle/verify/${settlementId}`, { action });
+  return response.data;
+};
+
+// ==================== ADMIN ENDPOINTS ====================
+
+export const getAllUsers = async () => {
+  const response = await api.get('/admin/users');
+  return response.data;
+};
+
+export const deactivateUser = async (userId) => {
+  const response = await api.patch(`/admin/users/${userId}/deactivate`);
+  return response.data;
+};
+
+export const reactivateUser = async (userId) => {
+  const response = await api.patch(`/admin/users/${userId}/reactivate`);
+  return response.data;
+};
+
+export const getAllGroups = async () => {
+  const response = await api.get('/admin/groups');
+  return response.data;
+};
+
+export const getSystemLogs = async ({ limit = 100, offset = 0 } = {}) => {
+  const response = await api.get('/admin/system/logs', {
+    params: { limit, offset },
+  });
+  return response.data;
+};
+
+export const getSystemStats = async () => {
+  const response = await api.get('/admin/system/stats');
+  return response.data;
+};
+
 export { api, authApi };
 export default api;
