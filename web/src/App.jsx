@@ -7,6 +7,9 @@ import Pantry from './pages/Pantry'
 import Expenses from './pages/Expenses'
 import Groups from './pages/Groups'
 import Profile from './pages/Profile'
+import Settlement from './pages/Settlement'
+import AdminDashboard from './pages/AdminDashboard'
+import TestRunner from './pages/TestRunner'
 import OAuth2Callback from './pages/OAuth2Callback'
 import './App.css'
 
@@ -19,8 +22,15 @@ function Sidebar({ user, onLogout }) {
     { path: '/groups', label: 'My Groups', icon: '👥' },
     { path: '/pantry', label: 'Pantry', icon: '🛒' },
     { path: '/expenses', label: 'Expenses', icon: '💰' },
+    { path: '/settlement', label: 'Settlement', icon: '💳' },
     { path: '/profile', label: 'Profile', icon: '👤' },
   ]
+
+  const adminNavItems = user?.role === 'ADMIN' 
+    ? [{ path: '/admin', label: 'Admin Panel', icon: '⚙️' }]
+    : []
+  
+  const allNavItems = [...navItems, ...adminNavItems]
 
   return (
     <aside className="sidebar">
@@ -29,7 +39,7 @@ function Sidebar({ user, onLogout }) {
         <h2>DormShare</h2>
       </div>
       <nav className="sidebar-nav">
-        {navItems.map(item => (
+        {allNavItems.map(item => (
           <a
             key={item.path}
             href="#"
@@ -59,7 +69,10 @@ function AppLayout({ user, token, onLogout }) {
           <Route path="/groups" element={<Groups user={user} />} />
           <Route path="/pantry" element={<Pantry user={user} />} />
           <Route path="/expenses" element={<Expenses user={user} />} />
+          <Route path="/settlement" element={<Settlement user={user} />} />
           <Route path="/profile" element={<Profile user={user} />} />
+          <Route path="/admin" element={<AdminDashboard user={user} />} />
+          <Route path="/test-runner" element={<TestRunner />} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </main>
