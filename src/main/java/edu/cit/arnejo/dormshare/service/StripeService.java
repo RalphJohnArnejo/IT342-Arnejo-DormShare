@@ -33,7 +33,7 @@ public class StripeService {
     @Value("${stripe.public.key:pk_test_dummy_key_for_sandbox}")
     private String stripePublicKey;
 
-    @Value("${stripe.mock.enabled:false}")
+    @Value("${stripe.mock.enabled:true}")
     private boolean mockEnabled;
 
     private Map<String, Map<String, Object>> mockPaymentIntents = new HashMap<>();
