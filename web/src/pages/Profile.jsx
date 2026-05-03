@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Edit3, Lock, Home } from 'lucide-react'
 import { getProfile, updateProfile, changePassword, getMyGroups } from '../services/api'
 import './Profile.css'
 
@@ -81,7 +82,7 @@ function Profile({ user, onProfileUpdate }) {
       if (res.success) {
         setProfile(res.data)
         setEditMode(false)
-        showToast('Profile updated successfully! 🎉')
+        showToast('Profile updated successfully!')
         // Update localStorage so sidebar/header reflect changes
         const stored = JSON.parse(localStorage.getItem('user') || '{}')
         stored.firstName = res.data.firstName
@@ -117,7 +118,7 @@ function Profile({ user, onProfileUpdate }) {
     try {
       const res = await changePassword(currentPassword, newPassword)
       if (res.success) {
-        showToast('Password changed successfully! 🔒')
+        showToast('Password changed successfully!')
         setShowPasswordForm(false)
         setCurrentPassword('')
         setNewPassword('')
@@ -191,8 +192,8 @@ function Profile({ user, onProfileUpdate }) {
           <div className="card-header">
             <h2>Account Details</h2>
             {!editMode && (
-              <button className="btn-edit" onClick={() => setEditMode(true)}>
-                ✏️ Edit
+              <button className="btn-edit" onClick={() => setEditMode(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <Edit3 size={14} /> Edit
               </button>
             )}
           </div>
@@ -272,8 +273,8 @@ function Profile({ user, onProfileUpdate }) {
                   <span className="detail-label">Password</span>
                   <span className="detail-value">••••••••</span>
                 </div>
-                <button className="btn-change-pw" onClick={() => setShowPasswordForm(true)}>
-                  🔒 Change Password
+                <button className="btn-change-pw" onClick={() => setShowPasswordForm(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'center' }}>
+                  <Lock size={16} /> Change Password
                 </button>
               </div>
             ) : (
@@ -334,7 +335,7 @@ function Profile({ user, onProfileUpdate }) {
               <div className="groups-mini-list">
                 {groups.map(group => (
                   <div key={group.id} className="group-mini-row">
-                    <div className="group-mini-icon">🏠</div>
+                    <div className="group-mini-icon"><Home size={20} /></div>
                     <div className="group-mini-info">
                       <span className="group-mini-name">{group.name}</span>
                       <span className="group-mini-members">
@@ -357,7 +358,7 @@ function Profile({ user, onProfileUpdate }) {
       {/* Toast */}
       {toast && (
         <div className={`toast ${toast.type}`} key={Date.now()}>
-          {toast.type === 'success' ? '✅' : '❌'} {toast.message}
+          {toast.message}
         </div>
       )}
     </div>

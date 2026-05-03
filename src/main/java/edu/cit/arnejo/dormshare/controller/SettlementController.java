@@ -187,8 +187,13 @@ public class SettlementController {
             boolean isSuccessful = "succeeded".equals(confirmResult.get("status"));
             if (isSuccessful) {
                 // Mark settlement as settled in database
-                // TODO: Update settlement entity with status = SETTLED
-                confirmResult.put("message", "Payment confirmed successfully");
+                try {
+                    Long splitId = Long.parseLong(request.getSettlementId());
+                    expenseService.settleSplit(splitId, user.getId());
+                    confirmResult.put("message", "Payment confirmed and split marked as settled successfully");
+                } catch (NumberFormatException e) {
+                    confirmResult.put("message", "Payment confirmed but failed to mark split as settled: invalid split ID");
+                }
             }
 
             return ResponseEntity.ok(ApiResponse.ok(confirmResult));

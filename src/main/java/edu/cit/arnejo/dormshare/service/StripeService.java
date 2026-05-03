@@ -28,6 +28,9 @@ public class StripeService {
     @Value("${stripe.sandbox.mode:true}")
     private boolean sandboxMode;
 
+    @Value("${stripe.public.key:pk_test_dummy_key_for_sandbox}")
+    private String stripePublicKey;
+
     /**
      * Initialize Stripe API key on service startup
      */
@@ -63,6 +66,8 @@ public class StripeService {
             response.put("amount", intent.getAmount());
             response.put("currency", intent.getCurrency());
             response.put("status", intent.getStatus());
+            // include public key so frontend can initialize Stripe.js
+            response.put("publicKey", stripePublicKey);
 
             logger.info("Payment intent created: {} for amount: {} PHP", intent.getId(), amountInCents);
             return response;
@@ -150,8 +155,6 @@ public class StripeService {
      * @return Public key for Stripe
      */
     public String getPublicKey() {
-        // In real implementation, this would come from properties
-        // For now, return a test public key
-        return "pk_test_51234567890abcdefghijk";
+        return stripePublicKey;
     }
 }

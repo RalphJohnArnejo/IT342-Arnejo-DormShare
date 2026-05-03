@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import { CreditCard, TrendingDown, TrendingUp, History, CheckCircle2, Camera, Paperclip, X } from 'lucide-react'
+import { loadStripe } from '@stripe/stripe-js'
 import {
   getSettlementSummary,
   getSettlementHistory,
@@ -28,6 +30,12 @@ function Settlement() {
   const [paymentMethod, setPaymentMethod] = useState('stripe')
   const [paymentProofFile, setPaymentProofFile] = useState(null)
   const [processingPayment, setProcessingPayment] = useState(false)
+  const [stripeLoaded, setStripeLoaded] = useState(false)
+
+  // Refs to hold Stripe instances between load and confirm phases
+  const stripeRef = useRef(null)
+  const elementsRef = useRef(null)
+  const paymentIntentIdRef = useRef(null)
 
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
@@ -74,13 +82,14 @@ function Settlement() {
         if (summaryData && summaryData.debts && Array.isArray(summaryData.debts)) {
           // Convert debts array into settlement-like objects
           const settlements = summaryData.debts.map(debt => ({
-            id: `${debt.fromUserId}-${debt.toUserId}`,
+            id: debt.splitId ? debt.splitId.toString() : `${debt.fromUserId}-${debt.toUserId}`,
             payerId: debt.fromUserId,
             payerName: debt.fromUserName,
             payeeId: debt.toUserId,
             payeeName: debt.toUserName,
             amount: debt.amount,
             status: debt.status,
+            createdAt: debt.createdAt || new Date().toISOString(),
             description: `Settlement between ${debt.fromUserName} and ${debt.toUserName}`
           }))
           setSettlements(settlements)
@@ -108,6 +117,7 @@ function Settlement() {
   const handlePaymentClick = (settlement) => {
     setSelectedSettlement(settlement)
     setPaymentAmount(settlement.amount || '')
+    setStripeLoaded(false)
     setShowPaymentModal(true)
   }
 
@@ -119,23 +129,40 @@ function Settlement() {
 
     setProcessingPayment(true)
     try {
-      // Step 1: Initiate payment and get Stripe intent
-      const intentRes = await getStripeClientSecret(selectedSettlement.id)
+      // Step 1: Create payment intent on backend
+      const intentRes = await getStripeClientSecret({
+        payeeId: selectedSettlement.payeeId,
+        amount: Number(paymentAmount),
+        groupId: selectedGroupId,
+        description: selectedSettlement.description || `Payment to ${selectedSettlement.payeeName}`,
+      })
       if (!intentRes.success) {
         showToast('Failed to initiate payment', 'error')
         setProcessingPayment(false)
         return
       }
 
-      const { clientSecret, paymentIntentId } = intentRes.data
+      const { clientSecret, paymentIntentId, publicKey } = intentRes.data
 
-      // Step 2: Load Stripe and create payment element
-      const stripe = await loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY)
+      // Step 2: Load Stripe and mount payment element
+      const stripe = await loadStripe(publicKey)
       const elements = stripe.elements({ clientSecret })
       const paymentElement = elements.create('payment')
 
-      // Show payment form in modal
-      showPaymentForm(paymentElement, stripe, clientSecret, paymentIntentId)
+      const formContainer = document.getElementById('stripe-payment-form')
+      if (formContainer) {
+        formContainer.innerHTML = ''
+        paymentElement.mount(formContainer)
+      }
+
+      // Store refs for the confirm step
+      stripeRef.current = stripe
+      elementsRef.current = elements
+      paymentIntentIdRef.current = paymentIntentId
+
+      // Form is loaded — enable the confirm button
+      setStripeLoaded(true)
+      setProcessingPayment(false)
     } catch (err) {
       console.error('Stripe payment error:', err)
       showToast('Payment processing failed', 'error')
@@ -143,40 +170,42 @@ function Settlement() {
     }
   }
 
-  const showPaymentForm = (paymentElement, stripe, clientSecret, paymentIntentId) => {
-    const formContainer = document.getElementById('stripe-payment-form')
-    if (formContainer) {
-      formContainer.innerHTML = ''
-      paymentElement.mount(formContainer)
+  const handleStripeConfirm = async () => {
+    if (!stripeRef.current || !elementsRef.current) return
 
-      const submitBtn = document.getElementById('stripe-submit-btn')
-      submitBtn.addEventListener('click', async () => {
-        submitBtn.disabled = true
-        const { error } = await stripe.confirmPayment({
-          elements: paymentElement,
-          confirmParams: {
-            return_url: `${window.location.origin}/settlement?status=success`,
-          },
-        })
-
-        if (error) {
-          showToast(error.message, 'error')
-          submitBtn.disabled = false
-        } else {
-          // Confirm payment on backend
-          const confirmRes = await confirmPayment(paymentIntentId, selectedSettlement.id)
-          if (confirmRes.success) {
-            showToast('Payment successful!', 'success')
-            setShowPaymentModal(false)
-            fetchSettlementData()
-          } else {
-            showToast('Payment confirmation failed', 'error')
-          }
-          setProcessingPayment(false)
-        }
+    setProcessingPayment(true)
+    try {
+      const { error } = await stripeRef.current.confirmPayment({
+        elements: elementsRef.current,
+        confirmParams: {
+          return_url: `${window.location.origin}/settlement?status=success`,
+        },
+        redirect: 'if_required',
       })
+
+      if (error) {
+        showToast(error.message, 'error')
+        setProcessingPayment(false)
+      } else {
+        // Confirm on backend
+        const confirmRes = await confirmPayment(paymentIntentIdRef.current, selectedSettlement.id)
+        if (confirmRes.success) {
+          showToast('Payment successful!', 'success')
+          setShowPaymentModal(false)
+          setStripeLoaded(false)
+          fetchSettlementData()
+        } else {
+          showToast('Payment confirmation failed', 'error')
+        }
+        setProcessingPayment(false)
+      }
+    } catch (err) {
+      console.error('Stripe confirm error:', err)
+      showToast('Payment confirmation failed', 'error')
+      setProcessingPayment(false)
     }
   }
+
 
   const handleProofPayment = async () => {
     if (!selectedSettlement || !paymentAmount || !paymentProofFile) {
@@ -215,7 +244,7 @@ function Settlement() {
     return (
       <div className="settlement-container">
         <div className="empty-state">
-          <div className="empty-icon">💳</div>
+          <div className="empty-icon"><CreditCard size={48} /></div>
           <h2>No Group Yet</h2>
           <p>Join or create a group to start managing settlements</p>
         </div>
@@ -240,7 +269,7 @@ function Settlement() {
   return (
     <div className="settlement-container">
       <div className="settlement-header">
-        <h1>💳 Settlements</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CreditCard size={28} /> Settlements</h1>
         <div className="group-selector">
           <select
             value={selectedGroupId}
@@ -265,19 +294,19 @@ function Settlement() {
           className={`tab ${activeTab === 'pending' ? 'active' : ''}`}
           onClick={() => setActiveTab('pending')}
         >
-          💰 You Owe ({pendingPayments.length})
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><TrendingDown size={18} /> You Owe ({pendingPayments.length})</span>
         </button>
         <button
           className={`tab ${activeTab === 'received' ? 'active' : ''}`}
           onClick={() => setActiveTab('received')}
         >
-          🎁 You Receive ({receivedPayments.length})
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><TrendingUp size={18} /> You Receive ({receivedPayments.length})</span>
         </button>
         <button
           className={`tab ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
         >
-          📜 History
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><History size={18} /> History</span>
         </button>
       </div>
 
@@ -286,7 +315,7 @@ function Settlement() {
           <h2>Your Pending Payments</h2>
           {pendingPayments.length === 0 ? (
             <div className="empty-message">
-              <p>✅ No pending payments. You're all set!</p>
+              <p style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}><CheckCircle2 size={20} color="#4ade80" /> No pending payments. You're all set!</p>
             </div>
           ) : (
             <div className="settlement-list">
@@ -300,12 +329,14 @@ function Settlement() {
                       <div>
                         <h3>Pay {settlement.payeeName}</h3>
                         <p className="settlement-date">
-                          Since {new Date(settlement.createdAt).toLocaleDateString()}
+                          {settlement.createdAt && !isNaN(new Date(settlement.createdAt).getTime())
+                            ? `Since ${new Date(settlement.createdAt).toLocaleDateString()}`
+                            : 'Outstanding'}
                         </p>
                       </div>
                     </div>
                     <div className="settlement-amount">
-                      <span className="amount-value">${settlement.amount?.toFixed(2)}</span>
+                      <span className="amount-value">₱{settlement.amount?.toFixed(2)}</span>
                       <span className={`status-badge status-${settlement.status?.toLowerCase()}`}>
                         {settlement.status}
                       </span>
@@ -314,8 +345,9 @@ function Settlement() {
                   <button
                     className="btn-pay"
                     onClick={() => handlePaymentClick(settlement)}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                   >
-                    💳 Pay Now
+                    <CreditCard size={18} /> Pay Now
                   </button>
                 </div>
               ))}
@@ -343,12 +375,14 @@ function Settlement() {
                       <div>
                         <h3>{settlement.payerName} owes you</h3>
                         <p className="settlement-date">
-                          Since {new Date(settlement.createdAt).toLocaleDateString()}
+                          {settlement.createdAt && !isNaN(new Date(settlement.createdAt).getTime())
+                            ? `Since ${new Date(settlement.createdAt).toLocaleDateString()}`
+                            : 'Outstanding'}
                         </p>
                       </div>
                     </div>
                     <div className="settlement-amount">
-                      <span className="amount-value">${settlement.amount?.toFixed(2)}</span>
+                      <span className="amount-value">₱{settlement.amount?.toFixed(2)}</span>
                       <span className={`status-badge status-${settlement.status?.toLowerCase()}`}>
                         {settlement.status}
                       </span>
@@ -383,10 +417,12 @@ function Settlement() {
                 <tbody>
                   {settlementHistory.map(settlement => (
                     <tr key={settlement.id}>
-                      <td>{new Date(settlement.createdAt).toLocaleDateString()}</td>
+                      <td>{settlement.createdAt && !isNaN(new Date(settlement.createdAt).getTime())
+                            ? new Date(settlement.createdAt).toLocaleDateString()
+                            : '—'}</td>
                       <td>{settlement.payerName}</td>
                       <td>{settlement.payeeName}</td>
-                      <td className="amount">${settlement.amount?.toFixed(2)}</td>
+                      <td className="amount">₱{settlement.amount?.toFixed(2)}</td>
                       <td>
                         <span className={`badge status-${settlement.status?.toLowerCase()}`}>
                           {settlement.status}
@@ -410,9 +446,9 @@ function Settlement() {
               onClick={() => setShowPaymentModal(false)}
               disabled={processingPayment}
             >
-              ✕
+              <X size={24} />
             </button>
-            <h2>💳 Payment Details</h2>
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CreditCard size={24} /> Payment Details</h2>
             <div className="payment-summary">
               <p className="summary-item">
                 <span>Paying to:</span>
@@ -420,12 +456,12 @@ function Settlement() {
               </p>
               <p className="summary-item">
                 <span>Amount:</span>
-                <strong>${paymentAmount}</strong>
+                <strong>₱{paymentAmount}</strong>
               </p>
             </div>
 
             <div className="payment-method-selector">
-              <label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <input
                   type="radio"
                   value="stripe"
@@ -433,9 +469,9 @@ function Settlement() {
                   onChange={(e) => setPaymentMethod(e.target.value)}
                   disabled={processingPayment}
                 />
-                💳 Card Payment (Stripe)
+                <CreditCard size={18} /> Card Payment (Stripe)
               </label>
-              <label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <input
                   type="radio"
                   value="proof"
@@ -443,21 +479,30 @@ function Settlement() {
                   onChange={(e) => setPaymentMethod(e.target.value)}
                   disabled={processingPayment}
                 />
-                📸 Upload Payment Proof
+                <Camera size={18} /> Upload Payment Proof
               </label>
             </div>
 
             {paymentMethod === 'stripe' && (
               <div className="payment-form">
                 <div id="stripe-payment-form"></div>
-                <button
-                  id="stripe-submit-btn"
-                  className="btn-payment"
-                  onClick={handleStripePayment}
-                  disabled={processingPayment}
-                >
-                  {processingPayment ? 'Processing...' : 'Pay with Card'}
-                </button>
+                {!stripeLoaded ? (
+                  <button
+                    className="btn-payment"
+                    onClick={handleStripePayment}
+                    disabled={processingPayment}
+                  >
+                    {processingPayment ? 'Loading payment form...' : 'Pay with Card'}
+                  </button>
+                ) : (
+                  <button
+                    className="btn-payment"
+                    onClick={handleStripeConfirm}
+                    disabled={processingPayment}
+                  >
+                    {processingPayment ? 'Processing...' : 'Confirm Payment'}
+                  </button>
+                )}
               </div>
             )}
 
@@ -470,8 +515,8 @@ function Settlement() {
                     onChange={(e) => setPaymentProofFile(e.target.files?.[0])}
                     disabled={processingPayment}
                   />
-                  <span className="file-input-text">
-                    {paymentProofFile ? `✓ ${paymentProofFile.name}` : '📎 Choose payment proof'}
+                  <span className="file-input-text" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {paymentProofFile ? <><CheckCircle2 size={16} /> {paymentProofFile.name}</> : <><Paperclip size={16} /> Choose payment proof</>}
                   </span>
                 </label>
                 <p className="proof-hint">Upload a screenshot of your payment (e.g., bank transfer, PayPal)</p>
@@ -491,12 +536,5 @@ function Settlement() {
   )
 }
 
-// Placeholder for Stripe loading - will be implemented with actual Stripe key
-const loadStripe = async (key) => {
-  // This would load the actual Stripe library
-  // For now, we'll show a message
-  alert('Stripe integration requires backend payment intent setup. Using proof upload instead.')
-  return null
-}
 
 export default Settlement

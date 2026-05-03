@@ -284,6 +284,8 @@ public class ExpenseService {
                     UserEntity creditor = userRepository.findById(payerId).orElse(null);
 
                     Map<String, Object> debt = new HashMap<>();
+                    debt.put("splitId", split.getId());
+                    debt.put("expenseId", expense.getId());
                     debt.put("fromUserId", debtorId);
                     debt.put("fromUserName", debtor != null ? debtor.getFirstName() + " " + debtor.getLastName() : "Unknown");
                     debt.put("toUserId", payerId);
@@ -335,9 +337,9 @@ public class ExpenseService {
                     record.put("expenseId", expense.getId());
                     record.put("description", expense.getDescription());
                     record.put("amount", split.getAmountOwed().doubleValue());
-                    record.put("userName", user != null ? user.getFirstName() + " " + user.getLastName() : "Unknown");
-                    record.put("payerName", payer != null ? payer.getFirstName() + " " + payer.getLastName() : "Unknown");
-                    record.put("settledAt", expense.getDate());
+                    record.put("payerName", user != null ? user.getFirstName() + " " + user.getLastName() : "Unknown"); // Debtor paid
+                    record.put("payeeName", payer != null ? payer.getFirstName() + " " + payer.getLastName() : "Unknown"); // Creditor received
+                    record.put("createdAt", expense.getDate() != null ? expense.getDate().toString() : null);
                     record.put("status", "SETTLED");
 
                     history.add(record);

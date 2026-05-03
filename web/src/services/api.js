@@ -232,8 +232,9 @@ export const initiatePayment = async (payeeId, amount, groupId) => {
   return response.data;
 };
 
-export const getStripeClientSecret = async (settlementId) => {
-  const response = await api.post('/payments/stripe/intent', { settlementId });
+// Create a Stripe payment intent. Payload should include { payeeId, amount, groupId, description }
+export const getStripeClientSecret = async (payload) => {
+  const response = await api.post('/payments/stripe/intent', payload);
   return response.data;
 };
 

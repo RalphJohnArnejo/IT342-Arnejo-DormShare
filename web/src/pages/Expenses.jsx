@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Camera, PlusCircle, Receipt, Users, FileText, RefreshCw } from 'lucide-react';
 import { createWorker } from 'tesseract.js';
 import { 
   getExpenseLedger, 
@@ -213,7 +214,7 @@ function Expenses() {
         setIsModalOpen(false);
         resetForm();
         fetchData();
-        showToast('Expense logged successfully! 🎉');
+        showToast('Expense logged successfully!');
       } else {
         showToast(res.error?.message || 'Failed to save expense', 'error');
       }
@@ -239,7 +240,7 @@ function Expenses() {
     if (extractedData) {
       if (extractedData.amount) setAmount(extractedData.amount);
       if (extractedData.description) setDescription(extractedData.description);
-      showToast('Receipt data applied! ✅');
+      showToast('Receipt data applied!');
     }
     setShowOcrPreview(false);
   };
@@ -257,7 +258,7 @@ function Expenses() {
       const res = await settleSplit(splitId);
       if (res.success) {
         fetchData();
-        showToast('Split settled! ✅');
+        showToast('Split settled!');
       } else {
         showToast(res.error?.details || res.error?.message || 'Failed to settle split', 'error');
       }
@@ -283,7 +284,7 @@ function Expenses() {
           </div>
         </header>
         <div className="empty-ledger" style={{ padding: '3rem 2rem' }}>
-          <span className="empty-icon">👥</span>
+          <span className="empty-icon"><Users size={48} /></span>
           <p style={{ fontSize: '1.05rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '0.5rem' }}>Join a group first</p>
           <p>You need to create or join a dorm group before splitting expenses.</p>
           <button className="btn-add-expense" onClick={() => window.location.href = '/groups'} style={{ marginTop: '1rem' }}>
@@ -301,8 +302,8 @@ function Expenses() {
           <h1>Shared Expenses</h1>
           <p className="subtitle">Track and settle roommate costs</p>
         </div>
-        <button className="btn-add-expense" onClick={() => setIsModalOpen(true)}>
-          <span className="btn-icon">+</span> Log Expense
+        <button className="btn-add-expense" onClick={() => setIsModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <PlusCircle size={20} /> Log Expense
         </button>
       </header>
 
@@ -340,7 +341,7 @@ function Expenses() {
             ))
           ) : ledger.length === 0 ? (
             <div className="empty-ledger">
-              <span className="empty-icon">💸</span>
+              <span className="empty-icon"><Receipt size={48} /></span>
               <p>No expenses recorded yet. Click "Log Expense" to get started!</p>
             </div>
           ) : (
@@ -387,7 +388,7 @@ function Expenses() {
             <form onSubmit={handleSubmit} className="expense-form">
               {/* Receipt Scanner */}
               <div className="form-group scan-box">
-                <label>📷 Scan Receipt (Optional)</label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Camera size={18} /> Scan Receipt (Optional)</label>
                 <input type="file" accept="image/*" onChange={handleFileUpload} />
                 {ocrLoading && <div className="ocr-status">Scanning receipt… ⌛</div>}
               </div>
@@ -528,7 +529,7 @@ function Expenses() {
       {/* Toast Notification */}
       {toast && (
         <div className={`toast ${toast.type}`} key={Date.now()}>
-          {toast.type === 'success' ? '✅' : '❌'} {toast.message}
+          {toast.message}
         </div>
       )}
 
@@ -537,7 +538,7 @@ function Expenses() {
         <div className="ocr-preview-overlay" onClick={handleCancelOcr}>
           <div className="ocr-preview-modal" onClick={(e) => e.stopPropagation()}>
             <header className="ocr-preview-header">
-              <h2>📸 Receipt Preview</h2>
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Camera size={24} /> Receipt Preview</h2>
               <button className="btn-close" onClick={handleCancelOcr}>×</button>
             </header>
 
@@ -548,7 +549,7 @@ function Expenses() {
               </div>
 
               <div className="extracted-data-section">
-                <h3>📊 Extracted Data</h3>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FileText size={20} /> Extracted Data</h3>
                 
                 <div className="extracted-item">
                   <label>Amount:</label>
@@ -589,7 +590,7 @@ function Expenses() {
                 )}
 
                 <details className="raw-text-section">
-                  <summary>📄 View Raw Text</summary>
+                  <summary style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FileText size={16} /> View Raw Text</summary>
                   <div className="raw-text-box">
                     <pre>{ocrRawText}</pre>
                   </div>
@@ -598,8 +599,8 @@ function Expenses() {
             </div>
 
             <footer className="ocr-preview-footer">
-              <button className="btn-cancel" onClick={handleCancelOcr}>
-                ↻ Retake Photo
+              <button className="btn-cancel" onClick={handleCancelOcr} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <RefreshCw size={16} /> Retake Photo
               </button>
               <button className="btn-confirm" onClick={handleConfirmOcr}>
                 ✓ Use This Data

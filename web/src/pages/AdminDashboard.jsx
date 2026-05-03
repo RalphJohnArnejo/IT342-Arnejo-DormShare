@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Settings, Users, CheckCircle2, HardDrive, FileText, Check, X, Lock, Unlock } from 'lucide-react'
 import {
   getAllUsers,
   deactivateUser,
@@ -126,7 +127,7 @@ function AdminDashboard() {
   return (
     <div className="admin-container">
       <div className="admin-header">
-        <h1>⚙️ Admin Dashboard</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Settings size={28} /> Admin Dashboard</h1>
         <p className="admin-subheader">System management and oversight</p>
       </div>
 
@@ -139,28 +140,28 @@ function AdminDashboard() {
       {/* Stats Cards */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon">👥</div>
+          <div className="stat-icon"><Users size={24} /></div>
           <div className="stat-content">
             <div className="stat-label">Total Users</div>
             <div className="stat-value">{stats.totalUsers || 0}</div>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon">✅</div>
+          <div className="stat-icon"><CheckCircle2 size={24} /></div>
           <div className="stat-content">
             <div className="stat-label">Active Users</div>
             <div className="stat-value">{stats.activeUsers || 0}</div>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon">👥</div>
+          <div className="stat-icon"><Users size={24} /></div>
           <div className="stat-content">
             <div className="stat-label">Total Groups</div>
             <div className="stat-value">{stats.totalGroups || 0}</div>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon">💾</div>
+          <div className="stat-icon"><HardDrive size={24} /></div>
           <div className="stat-content">
             <div className="stat-label">Storage Used</div>
             <div className="stat-value">{stats.storageUsedMB || 0} MB</div>
@@ -173,20 +174,23 @@ function AdminDashboard() {
         <button
           className={`tab ${activeTab === 'users' ? 'active' : ''}`}
           onClick={() => setActiveTab('users')}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
         >
-          👥 Users ({users.length})
+          <Users size={18} /> Users ({users.length})
         </button>
         <button
           className={`tab ${activeTab === 'groups' ? 'active' : ''}`}
           onClick={() => setActiveTab('groups')}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
         >
-          👫 Groups ({groups.length})
+          <Users size={18} /> Groups ({groups.length})
         </button>
         <button
           className={`tab ${activeTab === 'logs' ? 'active' : ''}`}
           onClick={() => setActiveTab('logs')}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
         >
-          📜 System Logs
+          <FileText size={18} /> System Logs
         </button>
       </div>
 
@@ -252,8 +256,8 @@ function AdminDashboard() {
                         </span>
                       </td>
                       <td>
-                        <span className={`status-badge status-${u.isActive ? 'active' : 'inactive'}`}>
-                          {u.isActive ? '✓ Active' : '✕ Inactive'}
+                        <span className={`status-badge status-${u.isActive ? 'active' : 'inactive'}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          {u.isActive ? <><Check size={14} /> Active</> : <><X size={14} /> Inactive</>}
                         </span>
                       </td>
                       <td>{new Date(u.createdAt).toLocaleDateString()}</td>
@@ -262,12 +266,13 @@ function AdminDashboard() {
                           className={`btn-action ${!u.isActive ? 'btn-reactivate' : 'btn-deactivate'}`}
                           onClick={() => handleDeactivateUser(u.id, u.isActive)}
                           disabled={deactivatingUserId === u.id}
+                          style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                         >
                           {deactivatingUserId === u.id
                             ? 'Processing...'
                             : u.isActive
-                            ? '🔒 Deactivate'
-                            : '🔓 Reactivate'}
+                            ? <><Lock size={14} /> Deactivate</>
+                            : <><Unlock size={14} /> Reactivate</>}
                         </button>
                       </td>
                     </tr>
@@ -293,7 +298,7 @@ function AdminDashboard() {
                 <div key={group.id} className="group-card">
                   <div className="group-card-header">
                     <h3>{group.name}</h3>
-                    <span className="group-size">👥 {group.memberCount || 0}</span>
+                    <span className="group-size" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Users size={16} /> {group.memberCount || 0}</span>
                   </div>
                   <div className="group-details">
                     <p>

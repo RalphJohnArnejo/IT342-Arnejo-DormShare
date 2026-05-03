@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Home, Mail, Lock, ArrowRight } from 'lucide-react'
 import { loginUser } from '../services/api'
 import './Auth.css'
 
@@ -37,7 +38,7 @@ function Login({ onLogin }) {
     <div className="auth-container">
       <div className="auth-left">
         <div className="brand-header">
-          <div className="brand-icon">🏠</div>
+          <div className="brand-icon"><Home size={20} color="#fff" /></div>
           <h1>DormShare</h1>
         </div>
 
@@ -59,7 +60,7 @@ function Login({ onLogin }) {
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <div className="input-wrapper">
-                <span className="input-icon">✉</span>
+                <span className="input-icon" style={{ display: 'flex' }}><Mail size={18} /></span>
                 <input
                   id="email"
                   type="email"
@@ -73,7 +74,7 @@ function Login({ onLogin }) {
 
             <div className="form-group">
               <div className="input-wrapper">
-                <span className="input-icon">🔒</span>
+                <span className="input-icon" style={{ display: 'flex' }}><Lock size={18} /></span>
                 <input
                   id="password"
                   type="password"
@@ -87,7 +88,7 @@ function Login({ onLogin }) {
 
             <button type="submit" className="btn-primary" disabled={loading}>
               {loading ? 'Signing In...' : 'Sign In'}
-              {!loading && <span className="btn-arrow">→</span>}
+              {!loading && <span className="btn-arrow" style={{ display: 'flex' }}><ArrowRight size={18} /></span>}
             </button>
           </form>
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { Users, ArrowRight, Plus, ShoppingCart, Edit2, Trash2, Package, X, AlertTriangle } from 'lucide-react'
 import {
   getAllPantryItems,
   getPantryStats,
@@ -248,11 +249,11 @@ function Pantry({ user }) {
           </div>
         </div>
         <div className="pantry-empty">
-          <span className="pantry-empty-icon">👥</span>
+          <span className="pantry-empty-icon"><Users size={64} /></span>
           <h3>Join a group first</h3>
           <p>You need to create or join a dorm group before accessing the shared pantry.</p>
           <button className="btn-add-item" onClick={() => window.location.href = '/groups'}>
-            <span className="btn-icon">→</span>
+            <span className="btn-icon" style={{display: 'flex'}}><ArrowRight size={18} /></span>
             Go to My Groups
           </button>
         </div>
@@ -269,7 +270,7 @@ function Pantry({ user }) {
           <p className="pantry-header-subtitle">Track communal household items</p>
         </div>
         <button id="btn-add-pantry-item" className="btn-add-item" onClick={openAddModal}>
-          <span className="btn-icon">+</span>
+          <span className="btn-icon" style={{display: 'flex'}}><Plus size={18} /></span>
           Add Item
         </button>
       </div>
@@ -316,7 +317,6 @@ function Pantry({ user }) {
       {/* Search & Filters */}
       <div className="pantry-controls">
         <div className="search-wrapper">
-          <span className="search-icon">🔍</span>
           <input
             id="pantry-search"
             type="text"
@@ -353,14 +353,14 @@ function Pantry({ user }) {
         </div>
       ) : filteredItems.length === 0 ? (
         <div className="pantry-empty">
-          <span className="pantry-empty-icon">🛒</span>
+          <span className="pantry-empty-icon"><ShoppingCart size={64} /></span>
           <h3>{searchQuery || activeFilter !== 'ALL' ? 'No items found' : 'Your pantry is empty'}</h3>
           <p>{searchQuery || activeFilter !== 'ALL'
             ? 'Try adjusting your search or filter'
             : 'Start by adding items your dorm needs!'}</p>
           {!searchQuery && activeFilter === 'ALL' && (
             <button className="btn-add-item" onClick={openAddModal}>
-              <span className="btn-icon">+</span>
+              <span className="btn-icon" style={{display: 'flex'}}><Plus size={18} /></span>
               Add First Item
             </button>
           )}
@@ -381,14 +381,14 @@ function Pantry({ user }) {
                     onClick={() => openEditModal(item)}
                     title="Edit item"
                   >
-                    ✏️
+                    <Edit2 size={16} />
                   </button>
                   <button
                     className="btn-card-action delete"
                     onClick={() => setDeleteTarget(item)}
                     title="Delete item"
                   >
-                    🗑️
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </div>
@@ -404,7 +404,7 @@ function Pantry({ user }) {
               </div>
 
               <div className="pantry-card-detail">
-                <span className="detail-icon">📦</span>
+                <span className="detail-icon" style={{display: 'flex'}}><Package size={16} /></span>
                 Quantity: {item.quantity}
               </div>
 
@@ -441,7 +441,7 @@ function Pantry({ user }) {
         <div className="pantry-modal-content" onClick={e => e.stopPropagation()}>
           <div className="pantry-modal-header">
               <h2>{editingItem ? 'Edit Item' : 'Add Pantry Item'}</h2>
-              <button className="btn-modal-close" onClick={closeModal}>✕</button>
+              <button className="btn-modal-close" onClick={closeModal}><X size={20} /></button>
             </div>
 
             <form className="modal-form" onSubmit={handleSubmit}>
@@ -533,7 +533,7 @@ function Pantry({ user }) {
       }}>
         <div className="pantry-modal-content" onClick={e => e.stopPropagation()}>
             <div className="delete-confirm">
-              <span className="delete-confirm-icon">⚠️</span>
+              <span className="delete-confirm-icon"><AlertTriangle size={48} /></span>
               <h3>Delete "{deleteTarget.itemName}"?</h3>
               <p>This action cannot be undone. The item will be removed from the shared pantry.</p>
               <div className="delete-confirm-actions">
@@ -552,7 +552,7 @@ function Pantry({ user }) {
       {/* Toast Notification */}
       {toast && (
         <div className={`toast ${toast.type}`}>
-          {toast.type === 'success' ? '✓' : '✕'} {toast.message}
+          {toast.message}
         </div>
       )}
     </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ClipboardList, ShoppingCart, Bell } from 'lucide-react'
 import {
   getPantryStats,
   getExpenseSummary,
@@ -166,7 +167,7 @@ function Dashboard({ user }) {
             </div>
           ) : (
             <div className="empty-state">
-              <span className="empty-icon">📋</span>
+              <span className="empty-icon" style={{display: 'flex', justifyContent: 'center'}}><ClipboardList size={48} strokeWidth={1.5} color="#c49a3c" /></span>
               <p>No expenses yet. Start by adding an expense!</p>
             </div>
           )}
@@ -196,7 +197,7 @@ function Dashboard({ user }) {
             </div>
           ) : (
             <div className="empty-state">
-              <span className="empty-icon">🛒</span>
+              <span className="empty-icon" style={{display: 'flex', justifyContent: 'center'}}><ShoppingCart size={48} strokeWidth={1.5} color="#c49a3c" /></span>
               <p>No pantry items yet. Click here to manage your shared pantry!</p>
             </div>
           )}
@@ -230,7 +231,7 @@ function Dashboard({ user }) {
           </div>
         ) : (
           <div className="empty-state">
-            <span className="empty-icon">🔔</span>
+            <span className="empty-icon" style={{display: 'flex', justifyContent: 'center'}}><Bell size={48} strokeWidth={1.5} color="#c49a3c" /></span>
             <p>No recent activity yet.</p>
           </div>
         )}

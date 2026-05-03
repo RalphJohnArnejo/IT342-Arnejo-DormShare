@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { LayoutDashboard, Users, ShoppingBasket, Receipt, CreditCard, User, Settings, LogOut, Home } from 'lucide-react'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -18,16 +19,16 @@ function Sidebar({ user, onLogout }) {
   const navigate = useNavigate()
 
   const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/groups', label: 'My Groups', icon: '👥' },
-    { path: '/pantry', label: 'Pantry', icon: '🛒' },
-    { path: '/expenses', label: 'Expenses', icon: '💰' },
-    { path: '/settlement', label: 'Settlement', icon: '💳' },
-    { path: '/profile', label: 'Profile', icon: '👤' },
+    { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+    { path: '/groups', label: 'My Groups', icon: <Users size={20} /> },
+    { path: '/pantry', label: 'Pantry', icon: <ShoppingBasket size={20} /> },
+    { path: '/expenses', label: 'Expenses', icon: <Receipt size={20} /> },
+    { path: '/settlement', label: 'Settlement', icon: <CreditCard size={20} /> },
+    { path: '/profile', label: 'Profile', icon: <User size={20} /> },
   ]
 
   const adminNavItems = user?.role === 'ADMIN' 
-    ? [{ path: '/admin', label: 'Admin Panel', icon: '⚙️' }]
+    ? [{ path: '/admin', label: 'Admin Panel', icon: <Settings size={20} /> }]
     : []
   
   const allNavItems = [...navItems, ...adminNavItems]
@@ -35,7 +36,7 @@ function Sidebar({ user, onLogout }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        <span className="brand-icon">🏠</span>
+        <span className="brand-icon"><Home size={28} /></span>
         <h2>DormShare</h2>
       </div>
       <nav className="sidebar-nav">
@@ -52,7 +53,7 @@ function Sidebar({ user, onLogout }) {
         ))}
       </nav>
       <button className="btn-logout" onClick={onLogout}>
-        <span className="nav-icon">🚪</span>
+        <span className="nav-icon"><LogOut size={20} /></span>
         Logout
       </button>
     </aside>

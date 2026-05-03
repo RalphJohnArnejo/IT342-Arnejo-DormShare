@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Crown, User, Check, Copy, Sparkles, Link, AlertTriangle } from 'lucide-react'
 import { createGroup, joinGroup, leaveGroup, getMyGroups } from '../services/api'
 import './Groups.css'
 
@@ -54,7 +55,7 @@ function Groups({ user }) {
     try {
       const res = await createGroup(groupName.trim())
       if (res.success) {
-        showToast(`Group "${groupName}" created! 🎉`)
+        showToast(`Group "${groupName}" created!`)
         setGroupName('')
         fetchGroups()
       } else {
@@ -77,7 +78,7 @@ function Groups({ user }) {
     try {
       const res = await joinGroup(inviteCode.trim().toUpperCase())
       if (res.success) {
-        showToast('Successfully joined the group! 🎉')
+        showToast('Successfully joined the group!')
         setInviteCode('')
         fetchGroups()
       } else {
@@ -154,7 +155,7 @@ function Groups({ user }) {
                 <div>
                   <h3 className="group-card-title">{group.name}</h3>
                   <span className={`role-badge ${getMemberRole(group).toLowerCase()}`}>
-                    {getMemberRole(group) === 'ADMIN' ? '👑 Admin' : '👤 Member'}
+                    {getMemberRole(group) === 'ADMIN' ? <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Crown size={14} color="#c49a3c" /> Admin</span> : <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><User size={14} /> Member</span>}
                   </span>
                 </div>
                 <button
@@ -173,8 +174,9 @@ function Groups({ user }) {
                   <button
                     className={`btn-copy ${copiedId === group.id ? 'copied' : ''}`}
                     onClick={() => copyInviteCode(group.inviteCode, group.id)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                   >
-                    {copiedId === group.id ? '✓ Copied' : '📋 Copy'}
+                    {copiedId === group.id ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}
                   </button>
                 </div>
               </div>
@@ -197,7 +199,7 @@ function Groups({ user }) {
                         <span className="member-email">{member.email}</span>
                       </div>
                       <span className={`member-role ${member.role?.toLowerCase()}`}>
-                        {member.role === 'ADMIN' ? '👑' : ''}
+                        {member.role === 'ADMIN' ? <Crown size={16} color="#c49a3c" /> : ''}
                       </span>
                     </div>
                   ))}
@@ -218,14 +220,16 @@ function Groups({ user }) {
           <button
             className={`tab ${activeTab === 'create' ? 'active' : ''}`}
             onClick={() => setActiveTab('create')}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
           >
-            ✨ Create Group
+            <Sparkles size={16} /> Create Group
           </button>
           <button
             className={`tab ${activeTab === 'join' ? 'active' : ''}`}
             onClick={() => setActiveTab('join')}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
           >
-            🔗 Join Group
+            <Link size={16} /> Join Group
           </button>
         </div>
 
@@ -281,7 +285,7 @@ function Groups({ user }) {
         <div className="modal-overlay" onClick={() => setLeaveTarget(null)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="delete-confirm">
-              <span className="delete-confirm-icon">⚠️</span>
+              <span className="delete-confirm-icon"><AlertTriangle size={32} /></span>
               <h3>Leave "{leaveTarget.name}"?</h3>
               <p>You will no longer have access to this group's pantry and expenses. You can rejoin later with an invite code.</p>
               <div className="delete-confirm-actions">
@@ -300,7 +304,7 @@ function Groups({ user }) {
       {/* Toast */}
       {toast && (
         <div className={`toast ${toast.type}`} key={Date.now()}>
-          {toast.type === 'success' ? '✅' : '❌'} {toast.message}
+          {toast.message}
         </div>
       )}
     </div>
