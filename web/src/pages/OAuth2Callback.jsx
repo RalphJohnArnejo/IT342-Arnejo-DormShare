@@ -14,18 +14,29 @@ function OAuth2Callback({ onLogin }) {
     const role = searchParams.get('role')
 
     if (token) {
-      onLogin(token, { token, userId, email, firstName, lastName, role })
-      navigate('/dashboard')
+      const userData = { token, userId, email, firstName, lastName, role }
+      localStorage.setItem('token', token)
+      localStorage.setItem('user', JSON.stringify(userData))
+      
+      if (onLogin) {
+        onLogin(token, userData)
+      }
+      
+      // Redirect immediately to dashboard
+      navigate('/dashboard', { replace: true })
     } else {
-      navigate('/login')
+      // Check if user is already logged in
+      const existingToken = localStorage.getItem('token')
+      if (existingToken) {
+        navigate('/dashboard', { replace: true })
+      } else {
+        navigate('/login', { replace: true })
+      }
     }
   }, [searchParams, onLogin, navigate])
 
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#fdfbf5' }}>
-      <p style={{ color: '#6b7280', fontSize: '1rem' }}>Signing you in...</p>
-    </div>
-  )
+  // Don't render anything - just redirect
+  return null
 }
 
 export default OAuth2Callback

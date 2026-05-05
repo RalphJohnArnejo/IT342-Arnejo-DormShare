@@ -364,12 +364,16 @@ function Settlement() {
   }
 
   const getPendingSettlements = () => {
-    return settlements.filter(s => s.status === 'PENDING' && s.payerId === user.userId)
-  }
+  const currentUserId = user.userId || user.id
+  return settlements.filter(s => s.status === 'PENDING' &&
+    String(s.payerId) === String(currentUserId))
+}
 
-  const getReceivedPayments = () => {
-    return settlements.filter(s => s.status === 'PENDING' && s.payeeId === user.userId)
-  }
+const getReceivedPayments = () => {
+  const currentUserId = user.userId || user.id
+  return settlements.filter(s => s.status === 'PENDING' &&
+    String(s.payeeId) === String(currentUserId))
+}
 
   if (!hasGroup) {
     return (
