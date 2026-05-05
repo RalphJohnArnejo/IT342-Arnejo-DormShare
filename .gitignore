@@ -26,3 +26,9 @@ frontend/dist/
 web/node_modules/
 web/dist/
 web/.vite/
+
+# Sensitive Configuration Files
+application-secrets.properties
+.env
+.env.local
+.env.*.local
