@@ -2,6 +2,8 @@ package edu.cit.arnejo.dormshare.api
 
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import okhttp3.Interceptor
+import okhttp3.Request
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
@@ -13,6 +15,8 @@ import java.util.concurrent.TimeUnit
  * For Physical Device:   use your computer's local IP, e.g., "http://192.168.1.100:8080/"
  * For Deployed Backend:  use the deployed URL, e.g., "https://your-backend.com/"
  */
+import edu.cit.arnejo.dormshare.auth.TokenProvider
+
 object RetrofitClient {
 
     // Change this URL based on your setup
@@ -22,8 +26,18 @@ object RetrofitClient {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
+    private val authInterceptor = Interceptor { chain ->
+        val original: Request = chain.request()
+        val builder = original.newBuilder()
+        TokenProvider.token?.let { token ->
+            builder.addHeader("Authorization", "Bearer $token")
+        }
+        chain.proceed(builder.build())
+    }
+
     private val httpClient = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
+        .addInterceptor(authInterceptor)
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)

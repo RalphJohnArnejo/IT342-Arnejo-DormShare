@@ -12,6 +12,9 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var tvUserEmail: TextView
     private lateinit var tvUserRole: TextView
     private lateinit var btnLogout: MaterialButton
+    private lateinit var btnExpenses: MaterialButton
+    private lateinit var btnGroups: MaterialButton
+    private lateinit var btnSettlements: MaterialButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,6 +25,9 @@ class HomeActivity : AppCompatActivity() {
         tvUserEmail = findViewById(R.id.tvUserEmail)
         tvUserRole = findViewById(R.id.tvUserRole)
         btnLogout = findViewById(R.id.btnLogout)
+        btnExpenses = findViewById(R.id.btnExpenses)
+        btnGroups = findViewById(R.id.btnGroups)
+        btnSettlements = findViewById(R.id.btnSettlements)
 
         // Get user data from intent
         val firstName = intent.getStringExtra("firstName") ?: ""
@@ -43,6 +49,21 @@ class HomeActivity : AppCompatActivity() {
                     Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
             finish()
+        }
+
+        btnExpenses.setOnClickListener {
+            val intent = Intent(this, ExpensesActivity::class.java)
+            startActivity(intent)
+        }
+
+        btnGroups.setOnClickListener {
+            val intent = Intent(this, GroupsActivity::class.java)
+            startActivity(intent)
+        }
+
+        btnSettlements.setOnClickListener {
+            val intent = Intent(this, SettlementsActivity::class.java)
+            startActivity(intent)
         }
     }
 }

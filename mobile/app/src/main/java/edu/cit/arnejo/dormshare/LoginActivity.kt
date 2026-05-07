@@ -96,6 +96,9 @@ class LoginActivity : AppCompatActivity() {
                     val role = data?.get("role")?.toString() ?: "USER"
                     val token = data?.get("token")?.toString() ?: ""
 
+                    // Save token to in-memory provider for authenticated API calls
+                    edu.cit.arnejo.dormshare.auth.TokenProvider.token = token
+
                     Toast.makeText(this@LoginActivity, "Login Successful!", Toast.LENGTH_SHORT).show()
 
                     // Navigate to Home screen with user data
