@@ -7,13 +7,15 @@ function OAuth2Callback({ onLogin }) {
 
   useEffect(() => {
     const token = searchParams.get('token')
-    const userId = searchParams.get('userId')
+    const userIdStr = searchParams.get('userId')
     const email = searchParams.get('email')
     const firstName = searchParams.get('firstName')
     const lastName = searchParams.get('lastName')
     const role = searchParams.get('role')
 
-    if (token) {
+    if (token && userIdStr) {
+      // Convert userId to number for proper comparisons
+      const userId = parseInt(userIdStr, 10)
       const userData = { token, userId, email, firstName, lastName, role }
       localStorage.setItem('token', token)
       localStorage.setItem('user', JSON.stringify(userData))

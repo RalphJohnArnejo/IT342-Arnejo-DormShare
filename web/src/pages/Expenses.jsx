@@ -88,13 +88,17 @@ function Expenses() {
   const fetchData = async (groupId = selectedGroup) => {
     try {
       setLoading(true);
+      console.log('Fetching expenses for groupId:', groupId, 'Type:', typeof groupId);
       const [ledgerRes, summaryRes, roommatesRes] = await Promise.all([
         getExpenseLedger(groupId),
         getExpenseSummary(groupId),
         getAllRoommates()
       ]);
 
-      if (ledgerRes.success) setLedger(ledgerRes.data || []);
+      if (ledgerRes.success) {
+        console.log('Ledger response:', ledgerRes.data);
+        setLedger(ledgerRes.data || []);
+      }
       if (summaryRes.success) setSummary(summaryRes.data || { owedToYou: 0, youOwe: 0, netBalance: 0 });
       if (roommatesRes.success) {
         // Filter out current user from roommate selector
