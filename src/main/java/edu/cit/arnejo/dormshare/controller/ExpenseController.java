@@ -54,6 +54,14 @@ public class ExpenseController {
                         "You must join or create a group before using expenses"));
     }
 
+    /**
+     * Helper: validate that user is a member of the requested group
+     */
+    private boolean isUserInGroup(Long userId, Long groupId) {
+        List<GroupMembershipEntity> memberships = membershipRepository.findByGroupId(groupId);
+        return memberships.stream().anyMatch(m -> m.getUserId().equals(userId));
+    }
+
     @PostMapping
     public ResponseEntity<ApiResponse> logExpense(
             @RequestBody ExpenseRequest request,
@@ -69,6 +77,12 @@ public class ExpenseController {
             groupId = groupService.getUserGroupId(user.getId());
         }
         if (groupId == null) return noGroupError();
+
+        // Validate user is a member of the group
+        if (!isUserInGroup(user.getId(), groupId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("AUTH-003", "Access denied", "You are not a member of this group"));
+        }
 
         // Force the paidById to be the current user for security
         request.setPaidById(user.getId());
@@ -95,6 +109,12 @@ public class ExpenseController {
         }
         if (groupId == null) return noGroupError();
 
+        // Validate user is a member of the group
+        if (!isUserInGroup(user.getId(), groupId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("AUTH-003", "Access denied", "You are not a member of this group"));
+        }
+
         ApiResponse result = expenseService.getLedger(groupId);
         return ResponseEntity.ok(result);
     }
@@ -113,6 +133,12 @@ public class ExpenseController {
             groupId = groupService.getUserGroupId(user.getId());
         }
         if (groupId == null) return noGroupError();
+
+        // Validate user is a member of the group
+        if (!isUserInGroup(user.getId(), groupId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("AUTH-003", "Access denied", "You are not a member of this group"));
+        }
 
         ApiResponse result = expenseService.getSummary(user.getId(), groupId);
         return ResponseEntity.ok(result);
