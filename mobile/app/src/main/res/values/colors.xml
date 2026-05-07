@@ -1,20 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#1565C0</color>
-    <color name="primary_dark">#0D47A1</color>
-    <color name="primary_light">#42A5F5</color>
-    <color name="accent">#00BFA5</color>
+    <color name="primary">#C49A3C</color>
+    <color name="primary_dark">#8B6914</color>
+    <color name="primary_light">#D4AF5A</color>
+    <color name="accent">#C49A3C</color>
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
-    <color name="text_primary">#212121</color>
-    <color name="text_secondary">#757575</color>
-    <color name="text_hint">#9E9E9E</color>
-    <color name="background">#F5F7FA</color>
+    <color name="text_primary">#1A1A1A</color>
+    <color name="text_secondary">#6B7280</color>
+    <color name="text_hint">#9CA3AF</color>
+    <color name="background">#F9FAFB</color>
     <color name="card_background">#FFFFFF</color>
-    <color name="error">#D32F2F</color>
-    <color name="success">#388E3C</color>
-    <color name="divider">#E0E0E0</color>
-    <color name="input_background">#F0F4F8</color>
-    <color name="gradient_start">#1565C0</color>
-    <color name="gradient_end">#0D47A1</color>
+    <color name="card_dark">#1F2937</color>
+    <color name="card_dark_text">#9CA3AF</color>
+    <color name="card_dark_text_light">#6B7280</color>
+    <color name="green_success">#16A34A</color>
+    <color name="red_error">#DC2626</color>
+    <color name="amber_warning">#D97706</color>
+    <color name="bg_cream">#FEFCF6</color>
+    <color name="divider">#E5E7EB</color>
+    <color name="input_background">#F3F4F6</color>
+    <color name="error">#DC2626</color>
+    <color name="success">#16A34A</color>
+    <color name="gradient_start">#2D1B00</color>
+    <color name="gradient_center">#6B3A00</color>
+    <color name="gradient_end">#C49A3C</color>
+    <color name="text_on_gradient">#FFFFFF</color>
+    <color name="text_on_gradient_secondary">#D4C5A0</color>
 </resources>

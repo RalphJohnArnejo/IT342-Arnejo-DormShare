@@ -2,24 +2,41 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
+    android:orientation="horizontal"
     android:padding="12dp"
     android:background="@drawable/bg_card"
-    android:layout_marginBottom="8dp">
+    android:layout_marginBottom="8dp"
+    android:gravity="center_vertical">
 
-    <TextView
-        android:id="@+id/tvSettlementSummary"
-        android:layout_width="match_parent"
+    <LinearLayout
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Settlement"
-        android:textStyle="bold" />
+        android:layout_weight="1"
+        android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/tvSettlementDate"
-        android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/tvSettlementSummary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Settlement"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvSettlementDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Date"
+            android:textSize="12sp"
+            android:layout_marginTop="4dp" />
+
+    </LinearLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnMarkPaid"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Date"
+        android:text="Mark Paid"
         android:textSize="12sp"
-        android:layout_marginTop="4dp" />
+        style="?attr/borderlessButtonStyle" />
 
 </LinearLayout>

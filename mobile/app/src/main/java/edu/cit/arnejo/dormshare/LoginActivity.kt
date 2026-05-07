@@ -12,6 +12,8 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import edu.cit.arnejo.dormshare.api.RetrofitClient
+import edu.cit.arnejo.dormshare.auth.SessionManager
+import edu.cit.arnejo.dormshare.auth.TokenProvider
 import edu.cit.arnejo.dormshare.model.LoginRequest
 import kotlinx.coroutines.launch
 
@@ -28,6 +30,23 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
+        // Check for existing session (auto-login)
+        lifecycleScope.launch {
+            val savedToken = SessionManager.getToken(this@LoginActivity)
+            if (!savedToken.isNullOrEmpty()) {
+                TokenProvider.token = savedToken
+                val intent = Intent(this@LoginActivity, HomeActivity::class.java).apply {
+                    putExtra("firstName", SessionManager.getFirstName(this@LoginActivity) ?: "")
+                    putExtra("lastName", SessionManager.getLastName(this@LoginActivity) ?: "")
+                    putExtra("email", SessionManager.getEmail(this@LoginActivity) ?: "")
+                    putExtra("role", SessionManager.getRole(this@LoginActivity) ?: "USER")
+                    putExtra("token", savedToken)
+                }
+                startActivity(intent)
+                finish()
+            }
+        }
+
         // Initialize views
         etEmail = findViewById(R.id.etEmail)
         etPassword = findViewById(R.id.etPassword)
@@ -41,6 +60,11 @@ class LoginActivity : AppCompatActivity() {
             if (validateInputs()) {
                 performLogin()
             }
+        }
+
+        // Google Sign-In placeholder
+        findViewById<MaterialButton>(R.id.btnGoogleSignIn).setOnClickListener {
+            Toast.makeText(this, "Google Sign-In coming soon", Toast.LENGTH_SHORT).show()
         }
 
         // Navigate to Register screen
@@ -95,9 +119,19 @@ class LoginActivity : AppCompatActivity() {
                     val userEmail = data?.get("email")?.toString() ?: email
                     val role = data?.get("role")?.toString() ?: "USER"
                     val token = data?.get("token")?.toString() ?: ""
+                    val userId = (data?.get("userId") as? Number)?.toLong() ?: 0L
 
-                    // Save token to in-memory provider for authenticated API calls
-                    edu.cit.arnejo.dormshare.auth.TokenProvider.token = token
+                    // Save token to in-memory provider and persistent session
+                    TokenProvider.token = token
+                    SessionManager.saveSession(
+                        this@LoginActivity,
+                        token,
+                        userId,
+                        userEmail,
+                        firstName,
+                        lastName,
+                        role
+                    )
 
                     Toast.makeText(this@LoginActivity, "Login Successful!", Toast.LENGTH_SHORT).show()
 

@@ -1,35 +1,51 @@
 package edu.cit.arnejo.dormshare.adapter
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import edu.cit.arnejo.dormshare.R
+import edu.cit.arnejo.dormshare.databinding.ItemExpenseBinding
 import edu.cit.arnejo.dormshare.model.Expense
 
-class ExpenseAdapter(private var items: List<Expense>) : RecyclerView.Adapter<ExpenseAdapter.VH>() {
+class ExpenseAdapter(
+    private var expenses: List<Expense>,
+    private val onItemLongClick: ((Expense) -> Boolean)? = null,
+    private val onSettleClick: ((Expense) -> Unit)? = null
+) : RecyclerView.Adapter<ExpenseAdapter.ExpenseViewHolder>() {
 
-    inner class VH(view: View) : RecyclerView.ViewHolder(view) {
-        val tvDescription: TextView = view.findViewById(R.id.tvDescription)
-        val tvMeta: TextView = view.findViewById(R.id.tvMeta)
+    class ExpenseViewHolder(val binding: ItemExpenseBinding) : RecyclerView.ViewHolder(binding.root)
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ExpenseViewHolder {
+        val binding = ItemExpenseBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ExpenseViewHolder(binding)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_expense, parent, false)
-        return VH(view)
+    override fun onBindViewHolder(holder: ExpenseViewHolder, position: Int) {
+        val expense = expenses[position]
+        val binding = holder.binding
+
+        binding.tvExpenseDesc.text = expense.description ?: "Expense"
+        binding.tvExpenseCategory.text = "Groceries"
+        binding.tvExpenseAmount.text = "₱%.0f".format(expense.amount)
+        binding.tvExpensePaidBy.text = "Paid by • ${expense.date ?: ""}"
+
+        // Show split info
+        val splitAmount = expense.amount / 2
+        binding.tvSplitPaid.text = "You: ₱%.0f ✓".format(splitAmount)
+        binding.tvSplitOwe.text = "Roommate: ₱%.0f SETTLE".format(splitAmount)
+
+        binding.tvSplitOwe.setOnClickListener {
+            onSettleClick?.invoke(expense)
+        }
+
+        binding.root.setOnLongClickListener {
+            onItemLongClick?.invoke(expense) ?: false
+        }
     }
 
-    override fun onBindViewHolder(holder: VH, position: Int) {
-        val e = items[position]
-        holder.tvDescription.text = e.description ?: "Expense"
-        holder.tvMeta.text = "Amount: ${e.amount} • By: ${e.paidById}"
-    }
+    override fun getItemCount() = expenses.size
 
-    override fun getItemCount(): Int = items.size
-
-    fun update(newItems: List<Expense>) {
-        items = newItems
+    fun update(newExpenses: List<Expense>) {
+        expenses = newExpenses
         notifyDataSetChanged()
     }
 }

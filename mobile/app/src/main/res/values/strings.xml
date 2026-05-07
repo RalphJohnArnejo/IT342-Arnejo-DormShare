@@ -2,13 +2,15 @@
     <string name="app_name">DormShare</string>
 
     <!-- Login Screen -->
-    <string name="login_title">Welcome Back</string>
-    <string name="login_subtitle">Sign in to your DormShare account</string>
-    <string name="email_hint">Email</string>
+    <string name="login_title">Welcome back</string>
+    <string name="login_subtitle">Sign in to manage your shared living</string>
+    <string name="login_branding_title">Manage your dorm\nlife, together.</string>
+    <string name="login_branding_subtitle">Split expenses, track shared pantry items,\nand keep your living situation drama-free.</string>
+    <string name="email_hint">Email address</string>
     <string name="password_hint">Password</string>
-    <string name="login_button">Login</string>
+    <string name="login_button">Sign In  \u2192</string>
     <string name="no_account">Don\'t have an account? </string>
-    <string name="register_link">Register</string>
+    <string name="register_link">Sign up</string>
 
     <!-- Register Screen -->
     <string name="register_title">Create Account</string>
