@@ -1,20 +1,29 @@
 package edu.cit.arnejo.dormshare.controller;
 
-import edu.cit.arnejo.dormshare.dto.ApiResponse;
-import edu.cit.arnejo.dormshare.dto.ExpenseRequest;
-import edu.cit.arnejo.dormshare.entity.UserEntity;
-import edu.cit.arnejo.dormshare.service.ExpenseService;
-import edu.cit.arnejo.dormshare.service.GroupService;
-import edu.cit.arnejo.dormshare.repository.GroupMembershipRepository;
-import edu.cit.arnejo.dormshare.repository.UserRepository;
-import edu.cit.arnejo.dormshare.entity.GroupMembershipEntity;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import edu.cit.arnejo.dormshare.dto.ApiResponse;
+import edu.cit.arnejo.dormshare.dto.ExpenseRequest;
+import edu.cit.arnejo.dormshare.entity.GroupMembershipEntity;
+import edu.cit.arnejo.dormshare.entity.UserEntity;
+import edu.cit.arnejo.dormshare.repository.GroupMembershipRepository;
+import edu.cit.arnejo.dormshare.repository.UserRepository;
+import edu.cit.arnejo.dormshare.service.ExpenseService;
+import edu.cit.arnejo.dormshare.service.GroupService;
 
 @RestController
 @RequestMapping("/api/expenses")
@@ -48,12 +57,17 @@ public class ExpenseController {
     @PostMapping
     public ResponseEntity<ApiResponse> logExpense(
             @RequestBody ExpenseRequest request,
+            @RequestParam(required = false) Long groupId,
             @AuthenticationPrincipal UserEntity user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("AUTH-001", "Unauthorized", "You must be logged in"));
         }
-        Long groupId = groupService.getUserGroupId(user.getId());
+        
+        // Use provided groupId, otherwise get user's primary group
+        if (groupId == null) {
+            groupId = groupService.getUserGroupId(user.getId());
+        }
         if (groupId == null) return noGroupError();
 
         // Force the paidById to be the current user for security
@@ -67,12 +81,18 @@ public class ExpenseController {
     }
 
     @GetMapping("/ledger")
-    public ResponseEntity<ApiResponse> getLedger(@AuthenticationPrincipal UserEntity user) {
+    public ResponseEntity<ApiResponse> getLedger(
+            @RequestParam(required = false) Long groupId,
+            @AuthenticationPrincipal UserEntity user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("AUTH-001", "Unauthorized", "You must be logged in"));
         }
-        Long groupId = groupService.getUserGroupId(user.getId());
+        
+        // Use provided groupId, otherwise get user's primary group
+        if (groupId == null) {
+            groupId = groupService.getUserGroupId(user.getId());
+        }
         if (groupId == null) return noGroupError();
 
         ApiResponse result = expenseService.getLedger(groupId);
@@ -80,12 +100,18 @@ public class ExpenseController {
     }
 
     @GetMapping("/summary")
-    public ResponseEntity<ApiResponse> getSummary(@AuthenticationPrincipal UserEntity user) {
+    public ResponseEntity<ApiResponse> getSummary(
+            @RequestParam(required = false) Long groupId,
+            @AuthenticationPrincipal UserEntity user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("AUTH-001", "Unauthorized", "You must be logged in"));
         }
-        Long groupId = groupService.getUserGroupId(user.getId());
+        
+        // Use provided groupId, otherwise get user's primary group
+        if (groupId == null) {
+            groupId = groupService.getUserGroupId(user.getId());
+        }
         if (groupId == null) return noGroupError();
 
         ApiResponse result = expenseService.getSummary(user.getId(), groupId);

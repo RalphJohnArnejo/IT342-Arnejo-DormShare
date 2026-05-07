@@ -25,6 +25,8 @@ function Expenses() {
   const [ocrLoading, setOcrLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [hasGroup, setHasGroup] = useState(true);
+  const [groups, setGroups] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState(null);
   
   // Form State
   const [description, setDescription] = useState('');
@@ -51,7 +53,10 @@ function Expenses() {
       const groupRes = await getMyGroups();
       if (groupRes.success && groupRes.data && groupRes.data.length > 0) {
         setHasGroup(true);
-        fetchData();
+        setGroups(groupRes.data);
+        const firstGroupId = groupRes.data[0].id;
+        setSelectedGroup(firstGroupId);
+        fetchData(firstGroupId);
       } else {
         setHasGroup(false);
         setLoading(false);
@@ -74,12 +79,18 @@ function Expenses() {
     setToast({ message, type });
   };
 
-  const fetchData = async () => {
+  const handleGroupChange = (groupId) => {
+    setSelectedGroup(groupId);
+    setLedger([]);
+    fetchData(groupId);
+  };
+
+  const fetchData = async (groupId = selectedGroup) => {
     try {
       setLoading(true);
       const [ledgerRes, summaryRes, roommatesRes] = await Promise.all([
-        getExpenseLedger(),
-        getExpenseSummary(),
+        getExpenseLedger(groupId),
+        getExpenseSummary(groupId),
         getAllRoommates()
       ]);
 
@@ -208,12 +219,12 @@ function Expenses() {
         description,
         category,
         splits: finalSplits
-      });
+      }, selectedGroup);
 
       if (res.success) {
         setIsModalOpen(false);
         resetForm();
-        fetchData();
+        fetchData(selectedGroup);
         showToast('Expense logged successfully!');
       } else {
         showToast(res.error?.message || 'Failed to save expense', 'error');
@@ -306,6 +317,25 @@ function Expenses() {
           <PlusCircle size={20} /> Log Expense
         </button>
       </header>
+
+      {/* Group Selector */}
+      {groups.length > 1 && (
+        <div className="group-selector-container">
+          <label htmlFor="group-select" className="group-selector-label">View Expenses for:</label>
+          <select
+            id="group-select"
+            className="group-selector"
+            value={selectedGroup || ''}
+            onChange={(e) => handleGroupChange(Number(e.target.value))}
+          >
+            {groups.map(group => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Summary Section */}
       <section className="summary-section">

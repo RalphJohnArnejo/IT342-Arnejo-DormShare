@@ -116,18 +116,18 @@ export const deletePantryItem = async (itemId) => {
 
 // ==================== EXPENSE ENDPOINTS ====================
 
-export const logExpense = async (expenseData) => {
-  const response = await api.post('/expenses', expenseData);
+export const logExpense = async (expenseData, groupId) => {
+  const response = await api.post(`/expenses${groupId ? `?groupId=${groupId}` : ''}`, expenseData);
   return response.data;
 };
 
-export const getExpenseLedger = async () => {
-  const response = await api.get('/expenses/ledger');
+export const getExpenseLedger = async (groupId) => {
+  const response = await api.get(`/expenses/ledger${groupId ? `?groupId=${groupId}` : ''}`);
   return response.data;
 };
 
-export const getExpenseSummary = async () => {
-  const response = await api.get('/expenses/summary');
+export const getExpenseSummary = async (groupId) => {
+  const response = await api.get(`/expenses/summary${groupId ? `?groupId=${groupId}` : ''}`);
   return response.data;
 };
 
