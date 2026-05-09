@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare
+package edu.cit.arnejo.dormshare.settlement
 
 import android.os.Bundle
 import android.widget.Toast
@@ -7,10 +7,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.lifecycle.lifecycleScope
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import edu.cit.arnejo.dormshare.adapter.SettlementAdapter
-import edu.cit.arnejo.dormshare.api.RetrofitClient
-import edu.cit.arnejo.dormshare.auth.SessionManager
-import edu.cit.arnejo.dormshare.model.Settlement
+import edu.cit.arnejo.dormshare.settlement.SettlementAdapter
+import edu.cit.arnejo.dormshare.shared.api.RetrofitClient
+import edu.cit.arnejo.dormshare.shared.auth.SessionManager
+import edu.cit.arnejo.dormshare.settlement.Settlement
 import kotlinx.coroutines.launch
 
 class SettlementsActivity : AppCompatActivity() {

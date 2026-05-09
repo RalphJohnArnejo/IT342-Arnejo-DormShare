@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare.model
+package edu.cit.arnejo.dormshare.auth
 
 data class LoginRequest(
     val email: String,

@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare
+package edu.cit.arnejo.dormshare.auth
 
 import android.content.Intent
 import android.os.Bundle
@@ -11,8 +11,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
-import edu.cit.arnejo.dormshare.api.RetrofitClient
-import edu.cit.arnejo.dormshare.model.RegisterRequest
+import edu.cit.arnejo.dormshare.shared.api.RetrofitClient
+import edu.cit.arnejo.dormshare.auth.RegisterRequest
 import kotlinx.coroutines.launch
 
 class RegisterActivity : AppCompatActivity() {

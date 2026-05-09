@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare.model
+package edu.cit.arnejo.dormshare.shared.model
 
 data class ApiResponse<T>(
     val success: Boolean,

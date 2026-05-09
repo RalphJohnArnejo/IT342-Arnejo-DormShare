@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare.model
+package edu.cit.arnejo.dormshare.auth
 
 /**
  * Matches the backend's flat login/register response data structure:

@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare.model
+package edu.cit.arnejo.dormshare.settlement
 
 data class Settlement(
     val id: Long,

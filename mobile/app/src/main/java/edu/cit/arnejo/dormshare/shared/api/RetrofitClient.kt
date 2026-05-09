@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare.api
+package edu.cit.arnejo.dormshare.shared.api
 
 import android.content.Context
 import okhttp3.OkHttpClient
@@ -16,8 +16,8 @@ import java.util.concurrent.TimeUnit
  * For Physical Device:   use your computer's local IP, e.g., "http://192.168.1.100:8080/"
  * For Deployed Backend:  use the deployed URL, e.g., "https://your-backend.com/"
  */
-import edu.cit.arnejo.dormshare.auth.SessionManager
-import edu.cit.arnejo.dormshare.auth.TokenProvider
+import edu.cit.arnejo.dormshare.shared.auth.SessionManager
+import edu.cit.arnejo.dormshare.shared.auth.TokenProvider
 
 object RetrofitClient {
 

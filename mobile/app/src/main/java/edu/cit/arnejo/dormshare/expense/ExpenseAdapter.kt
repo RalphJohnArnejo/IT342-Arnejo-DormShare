@@ -1,10 +1,10 @@
-package edu.cit.arnejo.dormshare.adapter
+package edu.cit.arnejo.dormshare.expense
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import edu.cit.arnejo.dormshare.databinding.ItemExpenseBinding
-import edu.cit.arnejo.dormshare.model.Expense
+import edu.cit.arnejo.dormshare.expense.Expense
 
 class ExpenseAdapter(
     private var expenses: List<Expense>,

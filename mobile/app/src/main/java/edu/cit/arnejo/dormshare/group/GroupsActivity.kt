@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare
+package edu.cit.arnejo.dormshare.group
 
 import android.os.Bundle
 import android.widget.Toast
@@ -7,10 +7,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
-import edu.cit.arnejo.dormshare.adapter.GroupAdapter
-import edu.cit.arnejo.dormshare.api.RetrofitClient
-import edu.cit.arnejo.dormshare.auth.SessionManager
-import edu.cit.arnejo.dormshare.model.Group
+import edu.cit.arnejo.dormshare.group.GroupAdapter
+import edu.cit.arnejo.dormshare.shared.api.RetrofitClient
+import edu.cit.arnejo.dormshare.shared.auth.SessionManager
+import edu.cit.arnejo.dormshare.group.Group
 import edu.cit.arnejo.dormshare.databinding.ActivityGroupsBinding
 import kotlinx.coroutines.launch
 import androidx.lifecycle.lifecycleScope
@@ -47,8 +47,8 @@ class GroupsActivity : AppCompatActivity() {
     private fun loadGroups() {
         lifecycleScope.launch {
             try {
-                val memToken = edu.cit.arnejo.dormshare.auth.TokenProvider.token
-                val sessionToken = edu.cit.arnejo.dormshare.auth.SessionManager.getToken(this@GroupsActivity)
+                val memToken = edu.cit.arnejo.dormshare.shared.auth.TokenProvider.token
+                val sessionToken = edu.cit.arnejo.dormshare.shared.auth.SessionManager.getToken(this@GroupsActivity)
                 android.util.Log.d("GROUPS_DEBUG", "MemToken: ${memToken?.take(20)}...")
                 android.util.Log.d("GROUPS_DEBUG", "SessionToken: ${sessionToken?.take(20)}...")
                 val response = RetrofitClient.apiService.getGroups()

@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare.api
+package edu.cit.arnejo.dormshare.shared.api
 
 import edu.cit.arnejo.dormshare.model.*
 import retrofit2.Response

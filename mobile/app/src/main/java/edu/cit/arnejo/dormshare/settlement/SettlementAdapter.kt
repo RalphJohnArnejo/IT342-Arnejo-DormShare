@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare.adapter
+package edu.cit.arnejo.dormshare.settlement
 
 import android.view.LayoutInflater
 import android.view.View
@@ -7,7 +7,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import edu.cit.arnejo.dormshare.R
-import edu.cit.arnejo.dormshare.model.Settlement
+import edu.cit.arnejo.dormshare.settlement.Settlement
 
 class SettlementAdapter(
     private var items: List<Settlement>,

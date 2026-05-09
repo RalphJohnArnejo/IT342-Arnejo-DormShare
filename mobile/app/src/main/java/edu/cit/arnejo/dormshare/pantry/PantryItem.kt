@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare.model
+package edu.cit.arnejo.dormshare.pantry
 
 data class PantryItem(
     val id: Long,

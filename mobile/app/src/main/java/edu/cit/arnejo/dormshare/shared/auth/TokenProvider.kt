@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare.auth
+package edu.cit.arnejo.dormshare.shared.auth
 
 object TokenProvider {
     // In-memory token holder. Persist to preferences if needed later.

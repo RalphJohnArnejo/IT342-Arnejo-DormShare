@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare.auth
+package edu.cit.arnejo.dormshare.shared.auth
 
 import android.content.Context
 import android.content.SharedPreferences

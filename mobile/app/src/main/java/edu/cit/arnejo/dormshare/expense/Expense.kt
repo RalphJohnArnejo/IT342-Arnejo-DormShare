@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare.model
+package edu.cit.arnejo.dormshare.expense
 
 import com.google.gson.annotations.SerializedName
 

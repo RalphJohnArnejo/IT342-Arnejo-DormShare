@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare.adapter
+package edu.cit.arnejo.dormshare.pantry
 
 import android.view.LayoutInflater
 import android.view.View
@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import edu.cit.arnejo.dormshare.R
 import edu.cit.arnejo.dormshare.databinding.ItemPantryBinding
-import edu.cit.arnejo.dormshare.model.PantryItem
+import edu.cit.arnejo.dormshare.pantry.PantryItem
 
 class PantryAdapter(
     private var items: List<PantryItem>,

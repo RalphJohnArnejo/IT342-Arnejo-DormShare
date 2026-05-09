@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare.adapter
+package edu.cit.arnejo.dormshare.group
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -12,8 +12,8 @@ import androidx.recyclerview.widget.RecyclerView
 import edu.cit.arnejo.dormshare.R
 import edu.cit.arnejo.dormshare.databinding.ItemGroupBinding
 import edu.cit.arnejo.dormshare.databinding.ItemMemberBinding
-import edu.cit.arnejo.dormshare.model.Group
-import edu.cit.arnejo.dormshare.model.GroupMember
+import edu.cit.arnejo.dormshare.group.Group
+import edu.cit.arnejo.dormshare.group.GroupMember
 
 class GroupAdapter(
     private var groups: List<Group>,

@@ -1,7 +1,7 @@
-package edu.cit.arnejo.dormshare
+package edu.cit.arnejo.dormshare.home
 
 import android.app.Application
-import edu.cit.arnejo.dormshare.api.RetrofitClient
+import edu.cit.arnejo.dormshare.shared.api.RetrofitClient
 
 /**
  * Custom Application class that initialises app-wide singletons.

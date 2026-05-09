@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare
+package edu.cit.arnejo.dormshare.expense
 
 import android.os.Bundle
 import android.widget.Toast
@@ -7,11 +7,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.textfield.TextInputEditText
-import edu.cit.arnejo.dormshare.adapter.ExpenseAdapter
-import edu.cit.arnejo.dormshare.api.RetrofitClient
-import edu.cit.arnejo.dormshare.auth.SessionManager
+import edu.cit.arnejo.dormshare.expense.ExpenseAdapter
+import edu.cit.arnejo.dormshare.shared.api.RetrofitClient
+import edu.cit.arnejo.dormshare.shared.auth.SessionManager
 import edu.cit.arnejo.dormshare.databinding.ActivityExpensesBinding
-import edu.cit.arnejo.dormshare.model.Expense
+import edu.cit.arnejo.dormshare.expense.Expense
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date

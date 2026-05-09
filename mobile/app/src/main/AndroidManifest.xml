@@ -7,7 +7,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
-        android:name=".DormShareApp"
+        android:name=".home.DormShareApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -19,7 +19,7 @@
 
         <!-- Login Screen (Launcher) -->
         <activity
-            android:name=".LoginActivity"
+            android:name=".auth.LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -28,14 +28,14 @@
         </activity>
 
         <!-- Registration Screen -->
-        <activity android:name=".RegisterActivity" />
+        <activity android:name=".auth.RegisterActivity" />
 
         <!-- Home Screen (After Login) -->
-        <activity android:name=".HomeActivity" />
-        <activity android:name=".ExpensesActivity" />
-        <activity android:name=".GroupsActivity" />
-        <activity android:name=".SettlementsActivity" />
-        <activity android:name=".PantryActivity" />
+        <activity android:name=".home.HomeActivity" />
+        <activity android:name=".expense.ExpensesActivity" />
+        <activity android:name=".group.GroupsActivity" />
+        <activity android:name=".settlement.SettlementsActivity" />
+        <activity android:name=".pantry.PantryActivity" />
 
     </application>
 </manifest>

@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare
+package edu.cit.arnejo.dormshare.home
 
 import android.content.Intent
 import android.os.Bundle
@@ -7,9 +7,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import edu.cit.arnejo.dormshare.api.RetrofitClient
-import edu.cit.arnejo.dormshare.auth.SessionManager
-import edu.cit.arnejo.dormshare.auth.TokenProvider
+import edu.cit.arnejo.dormshare.shared.api.RetrofitClient
+import edu.cit.arnejo.dormshare.shared.auth.SessionManager
+import edu.cit.arnejo.dormshare.shared.auth.TokenProvider
 import kotlinx.coroutines.launch
 
 class HomeActivity : AppCompatActivity() {

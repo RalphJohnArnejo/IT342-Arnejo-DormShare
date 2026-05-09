@@ -1,4 +1,4 @@
-package edu.cit.arnejo.dormshare.model
+package edu.cit.arnejo.dormshare.expense
 
 data class ExpenseSummary(
     val owedToYou: Double = 0.0,
