@@ -1,0 +1,398 @@
+package edu.cit.arnejo.dormshare.expense;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import edu.cit.arnejo.dormshare.shared.dto.ApiResponse;
+import edu.cit.arnejo.dormshare.expense.dto.ExpenseRequest;
+import edu.cit.arnejo.dormshare.expense.dto.ExpenseResponse;
+import edu.cit.arnejo.dormshare.expense.dto.ExpenseSummaryResponse;
+import edu.cit.arnejo.dormshare.expense.entity.ExpenseEntity;
+import edu.cit.arnejo.dormshare.expense.entity.ExpenseSplitEntity;
+import edu.cit.arnejo.dormshare.shared.entity.UserEntity;
+import edu.cit.arnejo.dormshare.expense.ExpenseRepository;
+import edu.cit.arnejo.dormshare.expense.ExpenseSplitRepository;
+import edu.cit.arnejo.dormshare.shared.entity.UserRepository;
+import edu.cit.arnejo.dormshare.notification.NotificationService;
+import edu.cit.arnejo.dormshare.user.EmailService;
+
+@Service
+public class ExpenseService {
+
+    private final ExpenseRepository expenseRepository;
+    private final ExpenseSplitRepository splitRepository;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
+    private final EmailService emailService;
+
+    public ExpenseService(ExpenseRepository expenseRepository,
+                          ExpenseSplitRepository splitRepository,
+                          UserRepository userRepository,
+                          NotificationService notificationService,
+                          EmailService emailService) {
+        this.expenseRepository = expenseRepository;
+        this.splitRepository = splitRepository;
+        this.userRepository = userRepository;
+        this.notificationService = notificationService;
+        this.emailService = emailService;
+    }
+
+    private String displayName(Long userId) {
+        return userRepository.findById(userId)
+                .map(u -> u.getFirstName() + " " + u.getLastName())
+                .orElse("Someone");
+    }
+
+    @Transactional
+    public ApiResponse createExpense(ExpenseRequest request, Long groupId) {
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            return ApiResponse.error("VALID-001", "Invalid amount", "Amount must be greater than zero");
+        }
+        if (request.getSplits() == null || request.getSplits().isEmpty()) {
+            return ApiResponse.error("VALID-002", "No splits", "At least one split participant is required");
+        }
+
+        // Validate payer exists
+        Long paidById = request.getPaidById();
+        if (paidById == null) {
+            return ApiResponse.error("VALID-003", "Missing payer", "PaidById is required");
+        }
+        Optional<UserEntity> payer = userRepository.findById(paidById);
+        if (payer.isEmpty()) {
+            return ApiResponse.error("DB-001", "User not found", "Payer does not exist");
+        }
+
+        // Create main expense
+        ExpenseEntity expense = new ExpenseEntity();
+        expense.setAmount(request.getAmount());
+        expense.setDescription(request.getDescription());
+        expense.setPaidById(request.getPaidById());
+        expense.setCategory(request.getCategory());
+        expense.setGroupId(groupId);
+        
+        expense = expenseRepository.save(expense);
+
+        // Save splits
+        for (ExpenseRequest.SplitRequest splitReq : request.getSplits()) {
+            ExpenseSplitEntity split = new ExpenseSplitEntity();
+            split.setExpenseId(expense.getId());
+            split.setUserId(splitReq.getUserId());
+            split.setAmountOwed(splitReq.getAmount());
+            split.setIsSettled(false);
+            
+            // Payer's own split is marked as settled immediately (they already paid it)
+            if (splitReq.getUserId().equals(request.getPaidById())) {
+                split.setIsSettled(true);
+            }
+            
+            splitRepository.save(split);
+        }
+
+        return ApiResponse.ok(mapToResponse(expense));
+    }
+
+    public ApiResponse getLedger(Long groupId) {
+        List<ExpenseEntity> expenses = expenseRepository.findByGroupIdOrderByDateDesc(groupId);
+        List<ExpenseResponse> responses = expenses.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+        return ApiResponse.ok(responses);
+    }
+
+    public ApiResponse getSummary(Long userId, Long groupId) {
+        // You Owe: Sum of all splits for this user that are NOT settled
+        // Only for expenses in this group
+        List<ExpenseSplitEntity> youOweSplits = splitRepository.findByUserIdAndIsSettled(userId, false);
+        BigDecimal totalYouOwe = BigDecimal.ZERO;
+        
+        for (ExpenseSplitEntity split : youOweSplits) {
+            // Check if the expense belongs to this group
+            Optional<ExpenseEntity> expOpt = expenseRepository.findById(split.getExpenseId());
+            if (expOpt.isPresent() && groupId.equals(expOpt.get().getGroupId())) {
+                totalYouOwe = totalYouOwe.add(split.getAmountOwed());
+            }
+        }
+
+        // Owed to You: Sum of all splits for OTHER users for expenses paid by you in this group
+        List<ExpenseEntity> yourPaidExpenses = expenseRepository.findByPaidByIdAndGroupIdOrderByDateDesc(userId, groupId);
+        BigDecimal totalOwedToYou = BigDecimal.ZERO;
+        
+        for (ExpenseEntity exp : yourPaidExpenses) {
+            List<ExpenseSplitEntity> splits = splitRepository.findByExpenseId(exp.getId());
+            for (ExpenseSplitEntity split : splits) {
+                // If someone else owes for your expense and hasn't settled
+                if (!split.getUserId().equals(userId) && !split.getIsSettled()) {
+                    totalOwedToYou = totalOwedToYou.add(split.getAmountOwed());
+                }
+            }
+        }
+
+        return ApiResponse.ok(new ExpenseSummaryResponse(totalOwedToYou, totalYouOwe));
+    }
+
+    @Transactional
+    public ApiResponse settleSplit(Long splitId, Long actorUserId) {
+        if (splitId == null) {
+            return ApiResponse.error("VALID-004", "Missing split ID", "SplitId is required");
+        }
+        if (actorUserId == null) {
+            return ApiResponse.error("AUTH-001", "Unauthorized", "You must be logged in");
+        }
+        Optional<ExpenseSplitEntity> splitOpt = splitRepository.findById(splitId);
+        if (splitOpt.isEmpty()) {
+            return ApiResponse.error("DB-001", "Split not found", "Split ID does not exist");
+        }
+
+        ExpenseSplitEntity split = splitOpt.get();
+
+        Optional<ExpenseEntity> expenseOpt = expenseRepository.findById(split.getExpenseId());
+        if (expenseOpt.isEmpty()) {
+            return ApiResponse.error("DB-001", "Expense not found", "Expense for this split does not exist");
+        }
+
+        ExpenseEntity expense = expenseOpt.get();
+        Long debtorUserId = split.getUserId();
+        Long payerUserId = expense.getPaidById();
+
+        boolean actorIsDebtor = debtorUserId != null && debtorUserId.equals(actorUserId);
+        boolean actorIsPayer = payerUserId != null && payerUserId.equals(actorUserId);
+
+        // Allow either the debtor (split owner) OR the payer to mark it settled (matches UI)
+        if (!actorIsDebtor && !actorIsPayer) {
+            return ApiResponse.error("AUTH-002", "Forbidden", "You can only settle your own split or splits for expenses you paid");
+        }
+
+        // Idempotent: if already settled, return OK without duplicating notifications
+        if (Boolean.TRUE.equals(split.getIsSettled())) {
+            return ApiResponse.ok(null);
+        }
+
+        split.setIsSettled(true);
+        splitRepository.save(split);
+
+        String desc = (expense.getDescription() == null || expense.getDescription().isBlank())
+                ? "an expense"
+                : expense.getDescription();
+
+        // Notifications + receipts
+        if (payerUserId != null && debtorUserId != null && !payerUserId.equals(debtorUserId)) {
+            if (actorIsDebtor) {
+                // Debtor settled: notify payer
+                String settlerName = displayName(actorUserId);
+                notificationService.create(
+                        payerUserId,
+                        "DEBT_SETTLED",
+                        "Debt settled",
+                        settlerName + " settled ₱" + split.getAmountOwed() + " for \"" + desc + "\""
+                );
+
+                UserEntity payer = userRepository.findById(payerUserId).orElse(null);
+                UserEntity debtor = userRepository.findById(debtorUserId).orElse(null);
+                emailService.sendDebtSettledReceipt(payer, debtor, split.getAmountOwed(), expense.getDescription());
+            } else if (actorIsPayer) {
+                // Payer marked it settled: notify debtor
+                String payerName = displayName(actorUserId);
+                notificationService.create(
+                        debtorUserId,
+                        "DEBT_SETTLED",
+                        "Debt settled",
+                        payerName + " marked your ₱" + split.getAmountOwed() + " for \"" + desc + "\" as settled"
+                );
+
+                UserEntity payer = userRepository.findById(payerUserId).orElse(null);
+                UserEntity debtor = userRepository.findById(debtorUserId).orElse(null);
+                emailService.sendDebtMarkedSettledByPayerReceipt(payer, debtor, split.getAmountOwed(), expense.getDescription());
+            }
+        }
+
+        return ApiResponse.ok(null);
+    }
+
+    private ExpenseResponse mapToResponse(ExpenseEntity entity) {
+        ExpenseResponse res = new ExpenseResponse();
+        res.setId(entity.getId());
+        res.setAmount(entity.getAmount());
+        res.setDescription(entity.getDescription());
+        res.setPaidById(entity.getPaidById());
+        res.setCategory(entity.getCategory());
+        res.setDate(entity.getDate());
+
+        // Fill payer name
+        Long paidById = entity.getPaidById();
+        if (paidById != null) {
+            userRepository.findById(paidById).ifPresent(u -> 
+                res.setPayerName(u.getFirstName() + " " + u.getLastName()));
+        }
+
+        // Fill splits
+        List<ExpenseSplitEntity> splits = splitRepository.findByExpenseId(entity.getId());
+        List<ExpenseResponse.SplitResponse> splitResponses = new ArrayList<>();
+        
+        for (ExpenseSplitEntity s : splits) {
+            ExpenseResponse.SplitResponse sr = new ExpenseResponse.SplitResponse();
+            sr.setId(s.getId());
+            sr.setUserId(s.getUserId());
+            sr.setAmountOwed(s.getAmountOwed());
+            sr.setIsSettled(s.getIsSettled());
+            
+            Long splitUserId = s.getUserId();
+            if (splitUserId != null) {
+                userRepository.findById(splitUserId).ifPresent(u -> 
+                    sr.setUserName(u.getFirstName() + " " + u.getLastName()));
+            }
+                
+            splitResponses.add(sr);
+        }
+        res.setSplits(splitResponses);
+
+        return res;
+    }
+
+    /**
+     * Get ledger summary showing who owes whom
+     */
+    public ApiResponse getLedgerSummary(Long groupId, Long currentUserId) {
+        try {
+            Map<String, Object> summary = new HashMap<>();
+            List<Map<String, Object>> debts = new ArrayList<>();
+
+            // Get all expenses for this group
+            List<ExpenseEntity> expenses = expenseRepository.findByGroupIdOrderByDateDesc(groupId);
+            
+            Map<String, Double> userBalances = new HashMap<>();
+
+            for (ExpenseEntity expense : expenses) {
+                Long payerId = expense.getPaidById();
+                if (payerId == null) continue;
+
+                List<ExpenseSplitEntity> splits = splitRepository.findByExpenseId(expense.getId());
+                
+                for (ExpenseSplitEntity split : splits) {
+                    if (split.getIsSettled()) continue; // Skip settled splits
+                    
+                    Long debtorId = split.getUserId();
+                    if (debtorId.equals(payerId)) continue; // Skip payer's own split
+
+                    // Add debt record
+                    UserEntity debtor = userRepository.findById(debtorId).orElse(null);
+                    UserEntity creditor = userRepository.findById(payerId).orElse(null);
+
+                    Map<String, Object> debt = new HashMap<>();
+                    debt.put("splitId", split.getId());
+                    debt.put("expenseId", expense.getId());
+                    debt.put("fromUserId", debtorId);
+                    debt.put("fromUserName", debtor != null ? debtor.getFirstName() + " " + debtor.getLastName() : "Unknown");
+                    debt.put("toUserId", payerId);
+                    debt.put("toUserName", creditor != null ? creditor.getFirstName() + " " + creditor.getLastName() : "Unknown");
+                    debt.put("amount", split.getAmountOwed().doubleValue());
+                    debt.put("status", "PENDING");
+
+                    debts.add(debt);
+
+                    // Track user balances
+                    String debtorKey = String.valueOf(debtorId);
+                    userBalances.put(debtorKey, userBalances.getOrDefault(debtorKey, 0.0) - split.getAmountOwed().doubleValue());
+
+                    String creditorKey = String.valueOf(payerId);
+                    userBalances.put(creditorKey, userBalances.getOrDefault(creditorKey, 0.0) + split.getAmountOwed().doubleValue());
+                }
+            }
+
+            summary.put("groupId", groupId);
+            summary.put("debts", debts);
+            summary.put("userBalances", userBalances);
+            summary.put("timestamp", System.currentTimeMillis());
+
+            return ApiResponse.ok(summary);
+        } catch (Exception e) {
+            return ApiResponse.error("EXPENSE-001", "Failed to get ledger summary", e.getMessage());
+        }
+    }
+
+    /**
+     * Get ledger history (settled transactions)
+     */
+    public ApiResponse getLedgerHistory(Long groupId) {
+        try {
+            List<Map<String, Object>> history = new ArrayList<>();
+
+            List<ExpenseEntity> expenses = expenseRepository.findByGroupIdOrderByDateDesc(groupId);
+            
+            for (ExpenseEntity expense : expenses) {
+                List<ExpenseSplitEntity> splits = splitRepository.findByExpenseId(expense.getId());
+                
+                for (ExpenseSplitEntity split : splits) {
+                    if (!split.getIsSettled()) continue; // Only settled
+                    
+                    UserEntity user = userRepository.findById(split.getUserId()).orElse(null);
+                    UserEntity payer = userRepository.findById(expense.getPaidById()).orElse(null);
+
+                    Map<String, Object> record = new HashMap<>();
+                    record.put("expenseId", expense.getId());
+                    record.put("description", expense.getDescription());
+                    record.put("amount", split.getAmountOwed().doubleValue());
+                    record.put("payerName", user != null ? user.getFirstName() + " " + user.getLastName() : "Unknown"); // Debtor paid
+                    record.put("payeeName", payer != null ? payer.getFirstName() + " " + payer.getLastName() : "Unknown"); // Creditor received
+                    record.put("createdAt", expense.getDate() != null ? expense.getDate().toString() : null);
+                    record.put("status", "SETTLED");
+
+                    history.add(record);
+                }
+            }
+
+            return ApiResponse.ok(history);
+        } catch (Exception e) {
+            return ApiResponse.error("EXPENSE-002", "Failed to get ledger history", e.getMessage());
+        }
+    }
+
+    /**
+     * Initiate a payment between users
+     */
+    @Transactional
+    public ApiResponse initiatePayment(Long payerId, Long payeeId, Double amount, Long groupId) {
+        try {
+            if (payeeId == null || payeeId.equals(payerId)) {
+                return ApiResponse.error("VALID-005", "Invalid payee", "Payee cannot be the same as payer");
+            }
+
+            UserEntity payee = userRepository.findById(payeeId).orElse(null);
+            if (payee == null) {
+                return ApiResponse.error("USER-001", "User not found", "Payee does not exist");
+            }
+
+            // Create a notification about the payment initiation
+            String payerName = userRepository.findById(payerId)
+                    .map(u -> u.getFirstName() + " " + u.getLastName())
+                    .orElse("Someone");
+
+            notificationService.create(
+                    payeeId,
+                    "PAYMENT_INITIATED",
+                    "Payment received",
+                    payerName + " initiated a payment of ₱" + amount
+            );
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("paymentId", "PAY_" + System.currentTimeMillis());
+            response.put("payerId", payerId);
+            response.put("payeeId", payeeId);
+            response.put("amount", amount);
+            response.put("status", "INITIATED");
+            response.put("createdAt", System.currentTimeMillis());
+
+            return ApiResponse.ok(response);
+        } catch (Exception e) {
+            return ApiResponse.error("PAYMENT-001", "Failed to initiate payment", e.getMessage());
+        }
+    }
+}
+
