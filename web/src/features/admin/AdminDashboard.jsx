@@ -7,7 +7,7 @@ import {
   getAllGroups,
   getSystemStats,
   getSystemLogs,
-} from '../services/api'
+} from '../../shared/services/api'
 import './AdminDashboard.css'
 
 function AdminDashboard() {

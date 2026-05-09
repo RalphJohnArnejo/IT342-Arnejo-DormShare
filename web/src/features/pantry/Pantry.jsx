@@ -8,7 +8,7 @@ import {
   deletePantryItem,
   searchPantryItems,
   getMyGroups
-} from '../services/api'
+} from '../../shared/services/api'
 import './Pantry.css'
 
 const CATEGORIES = [

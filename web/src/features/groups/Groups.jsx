@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Crown, User, Check, Copy, Sparkles, Link, AlertTriangle } from 'lucide-react'
-import { createGroup, joinGroup, leaveGroup, getMyGroups } from '../services/api'
+import { createGroup, joinGroup, leaveGroup, getMyGroups } from '../../shared/services/api'
 import './Groups.css'
 
 function Groups({ user }) {

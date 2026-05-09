@@ -8,7 +8,7 @@ import {
   getExpenseSummary,
   settleSplit,
   getMyGroups
-} from '../services/api';
+} from '../../shared/services/api';
 import './Expenses.css';
 
 const CATEGORIES = [

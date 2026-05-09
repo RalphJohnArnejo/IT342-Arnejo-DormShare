@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { runApiIntegrationTests } from '../utils/apiIntegrationTests'
+import { runApiIntegrationTests } from '../../shared/utils/apiIntegrationTests'
 import './TestRunner.css'
 
 function TestRunner() {

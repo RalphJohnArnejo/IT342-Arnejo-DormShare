@@ -1,30 +1,48 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Home, Mail, Lock, ArrowRight } from 'lucide-react'
-import { loginUser } from '../services/api'
+import { Link, useNavigate } from 'react-router-dom'
+import { Home, User, Mail, Lock, ArrowRight } from 'lucide-react'
+import { registerUser } from '../../shared/services/api'
 import './Auth.css'
 
-function Login({ onLogin }) {
+function Register() {
+  const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setSuccess('')
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters')
+      return
+    }
+
     setLoading(true)
 
+    // Split display name into firstName and lastName for the backend
+    const nameParts = displayName.trim().split(/\s+/)
+    const firstName = nameParts[0] || ''
+    const lastName = nameParts.slice(1).join(' ') || firstName
+
     try {
-      const result = await loginUser(email, password)
+      const result = await registerUser(firstName, lastName, email, password)
       if (result.success) {
-        onLogin(result.data.token, result.data)
+        setSuccess('Account created successfully! Redirecting to login...')
+        setTimeout(() => {
+          navigate('/login')
+        }, 2000)
       } else {
-        setError(result.error?.message || 'Login failed')
+        setError(result.error?.details || result.error?.message || 'Registration failed')
       }
     } catch (err) {
       const errorData = err.response?.data
-      setError(errorData?.error?.message || 'Invalid email or password')
+      setError(errorData?.error?.details || errorData?.error?.message || 'Registration failed')
     } finally {
       setLoading(false)
     }
@@ -52,12 +70,28 @@ function Login({ onLogin }) {
 
       <div className="auth-right">
         <div className="auth-form-wrapper">
-          <h2>Welcome back</h2>
-          <p className="subtitle">Sign in to manage your shared living</p>
+          <h2>Create account</h2>
+          <p className="subtitle">Get started with DormShare today</p>
 
           {error && <div className="error-message">{error}</div>}
+          {success && <div className="success-message">{success}</div>}
 
           <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <div className="input-wrapper">
+                <span className="input-icon" style={{ display: 'flex' }}><User size={18} /></span>
+                <input
+                  id="displayName"
+                  type="text"
+                  placeholder="Display name"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  required
+                  disabled={!!success}
+                />
+              </div>
+            </div>
+
             <div className="form-group">
               <div className="input-wrapper">
                 <span className="input-icon" style={{ display: 'flex' }}><Mail size={18} /></span>
@@ -68,6 +102,7 @@ function Login({ onLogin }) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={!!success}
                 />
               </div>
             </div>
@@ -82,13 +117,15 @@ function Login({ onLogin }) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  minLength={8}
+                  disabled={!!success}
                 />
               </div>
             </div>
 
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? 'Signing In...' : 'Sign In'}
-              {!loading && <span className="btn-arrow" style={{ display: 'flex' }}><ArrowRight size={18} /></span>}
+            <button type="submit" className="btn-primary" disabled={loading || !!success}>
+              {loading ? 'Creating Account...' : 'Create Account'}
+              {!loading && !success && <span className="btn-arrow" style={{ display: 'flex' }}><ArrowRight size={18} /></span>}
             </button>
           </form>
 
@@ -103,11 +140,11 @@ function Login({ onLogin }) {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
-            Sign in with Google
+            Sign up with Google
           </button>
 
           <p className="auth-link">
-            Don't have an account? <Link to="/register">Sign up</Link>
+            Already have an account? <Link to="/login">Sign in</Link>
           </p>
         </div>
       </div>
@@ -115,4 +152,4 @@ function Login({ onLogin }) {
   )
 }
 
-export default Login
+export default Register

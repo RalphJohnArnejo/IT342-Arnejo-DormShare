@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Edit3, Lock, Home } from 'lucide-react'
-import { getProfile, updateProfile, changePassword, getMyGroups } from '../services/api'
+import { getProfile, updateProfile, changePassword, getMyGroups } from '../../shared/services/api'
 import './Profile.css'
 
 function Profile({ user, onProfileUpdate }) {

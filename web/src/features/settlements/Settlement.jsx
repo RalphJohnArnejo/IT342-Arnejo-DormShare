@@ -9,7 +9,7 @@ import {
   getMyGroups,
   getStripeClientSecret,
   confirmPayment,
-} from '../services/api'
+} from '../../shared/services/api'
 import './Settlement.css'
 
 function Settlement() {

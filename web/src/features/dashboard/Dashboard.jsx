@@ -8,7 +8,7 @@ import {
   getNotifications,
   getUnreadNotificationCount,
   markNotificationRead,
-} from '../services/api'
+} from '../../shared/services/api'
 import './Dashboard.css'
 
 function Dashboard({ user }) {
