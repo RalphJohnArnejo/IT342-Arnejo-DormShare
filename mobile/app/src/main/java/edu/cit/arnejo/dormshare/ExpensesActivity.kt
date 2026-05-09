@@ -51,7 +51,8 @@ class ExpensesActivity : AppCompatActivity() {
             try {
                 val response = RetrofitClient.apiService.getExpenses(groupId)
                 if (response.isSuccessful) {
-                    val list = response.body() ?: emptyList()
+                    // CHANGE: Access .data from the ApiResponse wrapper
+                    val list = response.body()?.data ?: emptyList()
                     adapter.update(list)
                     binding.tvEmptyExpenses.visibility = if (list.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
                     loadSummary()
@@ -69,11 +70,12 @@ class ExpensesActivity : AppCompatActivity() {
             try {
                 val response = RetrofitClient.apiService.getExpenseSummary(groupId)
                 if (response.isSuccessful) {
-                    val list = response.body() ?: emptyList()
-                    val total = list.sumOf { it.amount }
-                    binding.tvOwedToYou.text = "₱%.0f".format(total)
-                    binding.tvYouOwe.text = "₱0"
-                    binding.tvNetBalance.text = "%.0f".format(total)
+                    val summary = response.body()?.data
+                    if (summary != null) {
+                        binding.tvOwedToYou.text = "₱%.0f".format(summary.owedToYou)
+                        binding.tvYouOwe.text = "₱%.0f".format(summary.youOwe)
+                        binding.tvNetBalance.text = "₱%.0f".format(summary.netBalance)
+                    }
                 }
             } catch (_: Exception) {}
         }

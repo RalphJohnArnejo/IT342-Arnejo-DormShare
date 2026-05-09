@@ -51,7 +51,8 @@ class SettlementsActivity : AppCompatActivity() {
             try {
                 val response = RetrofitClient.apiService.getSettlements(groupId)
                 if (response.isSuccessful) {
-                    val list: List<Settlement> = response.body() ?: emptyList()
+                    // CHANGE: Access .data from the ApiResponse wrapper
+                    val list = response.body()?.data ?: emptyList()
                     adapter.update(list)
                     tvEmpty.visibility = if (list.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
                 } else {

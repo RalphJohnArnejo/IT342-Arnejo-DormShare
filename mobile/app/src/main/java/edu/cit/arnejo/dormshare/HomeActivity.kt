@@ -124,7 +124,8 @@ class HomeActivity : AppCompatActivity() {
                 // Load recent expenses
                 val expenseResponse = RetrofitClient.apiService.getExpenses(groupId)
                 if (expenseResponse.isSuccessful) {
-                    val expenses = expenseResponse.body() ?: emptyList()
+                    // CHANGE: Use .data from the ApiResponse wrapper
+                    val expenses = expenseResponse.body()?.data ?: emptyList()
                     if (expenses.isNotEmpty()) {
                         val recent = expenses.first()
                         tvRecentExpenseDesc.text = recent.description ?: "Expense"
@@ -144,11 +145,12 @@ class HomeActivity : AppCompatActivity() {
                 // Load summary for balance cards
                 val summaryResponse = RetrofitClient.apiService.getExpenseSummary(groupId)
                 if (summaryResponse.isSuccessful) {
-                    val summary = summaryResponse.body() ?: emptyList()
-                    val total = summary.sumOf { it.amount }
-                    tvOwedToYou.text = "₱%.0f".format(total)
-                    tvYouOwe.text = "₱0"
-                    tvNetBalance.text = "₱%.0f".format(total)
+                    val summary = summaryResponse.body()?.data
+                    if (summary != null) {
+                        tvOwedToYou.text = "₱%.0f".format(summary.owedToYou)
+                        tvYouOwe.text = "₱%.0f".format(summary.youOwe)
+                        tvNetBalance.text = "₱%.0f".format(summary.netBalance)
+                    }
                 }
             } catch (_: Exception) {
                 // Keep defaults

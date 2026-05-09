@@ -1,20 +1,14 @@
 package edu.cit.arnejo.dormshare.model
 
 /**
- * Matches the backend AuthResponse structure.
- *
- * Success: { success: true, data: { token, userId, email, firstName, lastName, role }, timestamp }
- * Error:   { success: false, error: { code, message, details }, timestamp }
+ * Matches the backend's flat login/register response data structure:
+ * { "token": "...", "userId": 1, "email": "...", "firstName": "...", "lastName": "...", "role": "..." }
  */
 data class AuthResponse(
-    val success: Boolean,
-    val data: Map<String, Any>?,
-    val error: ErrorDetail?,
-    val timestamp: String?
-)
-
-data class ErrorDetail(
-    val code: String?,
-    val message: String?,
-    val details: Any?
+    val token: String,
+    val userId: Long,
+    val email: String,
+    val firstName: String,
+    val lastName: String,
+    val role: String
 )

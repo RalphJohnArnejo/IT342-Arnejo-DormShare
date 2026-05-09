@@ -47,16 +47,24 @@ class GroupsActivity : AppCompatActivity() {
     private fun loadGroups() {
         lifecycleScope.launch {
             try {
+                val memToken = edu.cit.arnejo.dormshare.auth.TokenProvider.token
+                val sessionToken = edu.cit.arnejo.dormshare.auth.SessionManager.getToken(this@GroupsActivity)
+                android.util.Log.d("GROUPS_DEBUG", "MemToken: ${memToken?.take(20)}...")
+                android.util.Log.d("GROUPS_DEBUG", "SessionToken: ${sessionToken?.take(20)}...")
                 val response = RetrofitClient.apiService.getGroups()
+                android.util.Log.d("GROUPS_DEBUG", "Response code: ${response.code()}")
                 if (response.isSuccessful) {
-                    val list: List<Group> = response.body() ?: emptyList()
+                    val list = response.body()?.data ?: emptyList()
                     adapter.update(list)
                     binding.tvEmptyGroups.visibility = if (list.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
                 } else {
-                    Toast.makeText(this@GroupsActivity, "Failed to load groups", Toast.LENGTH_SHORT).show()
+                    val errorBody = response.errorBody()?.string() ?: "no body"
+                    val tokenInfo = "mem=${memToken != null}, session=${sessionToken != null}"
+                    Toast.makeText(this@GroupsActivity, "Failed (${response.code()}) token:[$tokenInfo]", Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@GroupsActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                android.util.Log.e("GROUPS_DEBUG", "Exception", e)
+                Toast.makeText(this@GroupsActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }

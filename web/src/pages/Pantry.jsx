@@ -198,6 +198,8 @@ function Pantry({ user }) {
       const result = await deletePantryItem(deleteTarget.id)
       if (result.success) {
         showToast(`"${deleteTarget.itemName}" removed from pantry`)
+        fetchItems(selectedGroupId)
+        fetchStats(selectedGroupId)
         setDeleteTarget(null)
         fetchItems()
         fetchStats()

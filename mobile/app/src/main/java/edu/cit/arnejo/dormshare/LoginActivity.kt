@@ -2,6 +2,7 @@ package edu.cit.arnejo.dormshare
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.util.Patterns
 import android.view.View
 import android.widget.ProgressBar
@@ -30,11 +31,29 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
+        // Initialize RetrofitClient with app context so auth token can be read from SharedPreferences
+        RetrofitClient.init(this)
+
         // Check for existing session (auto-login)
         lifecycleScope.launch {
             val savedToken = SessionManager.getToken(this@LoginActivity)
             if (!savedToken.isNullOrEmpty()) {
                 TokenProvider.token = savedToken
+
+                // Verify the token is still valid by making a quick API call
+                try {
+                    val testResponse = RetrofitClient.apiService.getGroups()
+                    if (testResponse.code() == 401) {
+                        // Token expired or invalid – clear session, show login
+                        SessionManager.clearSession(this@LoginActivity)
+                        TokenProvider.token = null
+                        Log.d("AUTH_DEBUG", "Saved token expired, showing login")
+                        return@launch
+                    }
+                } catch (_: Exception) {
+                    // Network error – still try auto-login (may work offline later)
+                }
+
                 val intent = Intent(this@LoginActivity, HomeActivity::class.java).apply {
                     putExtra("firstName", SessionManager.getFirstName(this@LoginActivity) ?: "")
                     putExtra("lastName", SessionManager.getLastName(this@LoginActivity) ?: "")
@@ -47,7 +66,6 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
-        // Initialize views
         etEmail = findViewById(R.id.etEmail)
         etPassword = findViewById(R.id.etPassword)
         btnLogin = findViewById(R.id.btnLogin)
@@ -55,19 +73,16 @@ class LoginActivity : AppCompatActivity() {
         tvError = findViewById(R.id.tvError)
         tvRegisterLink = findViewById(R.id.tvRegisterLink)
 
-        // Login button click
         btnLogin.setOnClickListener {
             if (validateInputs()) {
                 performLogin()
             }
         }
 
-        // Google Sign-In placeholder
         findViewById<MaterialButton>(R.id.btnGoogleSignIn).setOnClickListener {
             Toast.makeText(this, "Google Sign-In coming soon", Toast.LENGTH_SHORT).show()
         }
 
-        // Navigate to Register screen
         tvRegisterLink.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
@@ -102,7 +117,6 @@ class LoginActivity : AppCompatActivity() {
         val email = etEmail.text.toString().trim()
         val password = etPassword.text.toString().trim()
 
-        // Show loading state
         setLoading(true)
         tvError.visibility = View.GONE
 
@@ -110,49 +124,38 @@ class LoginActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
+                // Inside performLogin() in LoginActivity.kt
                 val response = RetrofitClient.apiService.login(request)
+                val apiResponse = response.body()
 
-                if (response.isSuccessful && response.body()?.success == true) {
-                    val data = response.body()?.data
-                    val firstName = data?.get("firstName")?.toString() ?: ""
-                    val lastName = data?.get("lastName")?.toString() ?: ""
-                    val userEmail = data?.get("email")?.toString() ?: email
-                    val role = data?.get("role")?.toString() ?: "USER"
-                    val token = data?.get("token")?.toString() ?: ""
-                    val userId = (data?.get("userId") as? Number)?.toLong() ?: 0L
+                if (response.isSuccessful && apiResponse?.success == true) {
+                    // Get the typed AuthResponse object (flat structure from backend)
+                    val authData = apiResponse.data!!
 
-                    // Save token to in-memory provider and persistent session
+                    // Access properties directly from the flat structure
+                    val token = authData.token
+                    val firstName = authData.firstName
+                    val lastName = authData.lastName
+                    val userEmail = authData.email
+                    val role = authData.role
+                    val userId = authData.userId
+
+                    // Save the token to TokenProvider so other screens can access data
                     TokenProvider.token = token
-                    SessionManager.saveSession(
-                        this@LoginActivity,
-                        token,
-                        userId,
-                        userEmail,
-                        firstName,
-                        lastName,
-                        role
-                    )
+                    Log.d("AUTH_DEBUG", "Token saved: $token")
+
+                    SessionManager.saveSession(this@LoginActivity, token, userId, userEmail, firstName, lastName, role)
 
                     Toast.makeText(this@LoginActivity, "Login Successful!", Toast.LENGTH_SHORT).show()
-
-                    // Navigate to Home screen with user data
-                    val intent = Intent(this@LoginActivity, HomeActivity::class.java).apply {
-                        putExtra("firstName", firstName)
-                        putExtra("lastName", lastName)
-                        putExtra("email", userEmail)
-                        putExtra("role", role)
-                        putExtra("token", token)
-                    }
-                    startActivity(intent)
+                    startActivity(Intent(this@LoginActivity, HomeActivity::class.java))
                     finish()
                 } else {
-                    // Show error from backend
-                    val errorMessage = response.body()?.error?.message
-                        ?: response.body()?.error?.details?.toString()
-                        ?: getString(R.string.invalid_credentials)
+                    // 4. Correctly extract the error message from your new ApiError model
+                    val errorMessage = apiResponse?.error?.message ?: getString(R.string.invalid_credentials)
                     showError(errorMessage)
                 }
             } catch (e: Exception) {
+                Log.e("AUTH_ERROR", "Login failed", e)
                 showError(getString(R.string.error_network) + "\n" + e.localizedMessage)
             } finally {
                 setLoading(false)

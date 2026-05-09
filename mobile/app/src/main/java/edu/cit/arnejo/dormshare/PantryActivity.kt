@@ -41,9 +41,9 @@ class PantryActivity : AppCompatActivity() {
 
         // Filter chips
         binding.filterAll.setOnClickListener { loadPantryItems(null) }
-        binding.filterInStock.setOnClickListener { loadPantryItems("in_stock") }
-        binding.filterLowStock.setOnClickListener { loadPantryItems("low_stock") }
-        binding.filterOutOfStock.setOnClickListener { loadPantryItems("out_of_stock") }
+        binding.filterInStock.setOnClickListener { loadPantryItems("IN") }
+        binding.filterLowStock.setOnClickListener { loadPantryItems("LOW") }
+        binding.filterOutOfStock.setOnClickListener { loadPantryItems("OUT") }
 
         loadPantryItems(null)
     }
@@ -53,13 +53,17 @@ class PantryActivity : AppCompatActivity() {
             try {
                 val response = RetrofitClient.apiService.getPantryItems(groupId)
                 if (response.isSuccessful) {
-                    var list = response.body() ?: emptyList()
+                    // CHANGE: Access .data from the ApiResponse wrapper
+                    val fullList = response.body()?.data ?: emptyList()
+
+                    var filteredList = fullList
                     if (statusFilter != null) {
-                        list = list.filter { it.status == statusFilter }
+                        filteredList = fullList.filter { it.status == statusFilter }
                     }
-                    adapter.update(list)
-                    updateSummary(response.body() ?: emptyList())
-                    binding.tvEmptyPantry.visibility = if (list.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+
+                    adapter.update(filteredList)
+                    updateSummary(fullList)
+                    binding.tvEmptyPantry.visibility = if (filteredList.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
                 }
             } catch (e: Exception) {
                 Toast.makeText(this@PantryActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -69,9 +73,9 @@ class PantryActivity : AppCompatActivity() {
 
     private fun updateSummary(items: List<PantryItem>) {
         binding.tvTotalItems.text = items.size.toString()
-        binding.tvInStock.text = items.count { it.status == "in_stock" }.toString()
-        binding.tvLowStock.text = items.count { it.status == "low_stock" }.toString()
-        binding.tvOutOfStock.text = items.count { it.status == "out_of_stock" }.toString()
+        binding.tvInStock.text = items.count { it.status == "IN" }.toString()
+        binding.tvLowStock.text = items.count { it.status == "LOW" }.toString()
+        binding.tvOutOfStock.text = items.count { it.status == "OUT" }.toString()
     }
 
     private fun showAddDialog() {
@@ -100,7 +104,7 @@ class PantryActivity : AppCompatActivity() {
     }
 
     private fun addItem(name: String, quantity: Int) {
-        val item = PantryItem(0, name, quantity, "Other", "in_stock", groupId, SessionManager.getUserName(this), null)
+        val item = PantryItem(0, name, quantity, "Other", "IN", groupId, SessionManager.getUserName(this), null)
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.apiService.createPantryItem(item, groupId)
@@ -158,7 +162,7 @@ class PantryActivity : AppCompatActivity() {
     }
 
     private fun updateItem(id: Long, name: String, quantity: Int) {
-        val item = PantryItem(id, name, quantity, "Other", "in_stock", groupId, SessionManager.getUserName(this), null)
+        val item = PantryItem(id, name, quantity, "Other", "IN", groupId, SessionManager.getUserName(this), null)
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.apiService.updatePantryItem(id, item)
