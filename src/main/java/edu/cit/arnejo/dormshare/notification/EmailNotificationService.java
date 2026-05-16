@@ -1,15 +1,13 @@
 package edu.cit.arnejo.dormshare.notification;
 
 import edu.cit.arnejo.dormshare.shared.entity.UserEntity;
+import edu.cit.arnejo.dormshare.notification.entity.EmailNotificationPreferenceEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Enhanced Email Notification Service
@@ -36,6 +34,7 @@ public class EmailNotificationService {
                                     EmailNotificationPreferenceRepository preferenceRepository) {
         this.mailSender = mailSender;
         this.preferenceRepository = preferenceRepository;
+        log.info("EmailNotificationService initialized");
     }
 
     /**
@@ -47,11 +46,15 @@ public class EmailNotificationService {
             return;
         }
 
+        log.debug("Checking email notification preference for user {} ({}), type: {}", 
+            recipient.getId(), recipient.getEmail(), notificationType);
+
         if (!isEmailNotificationEnabled(recipient.getId(), notificationType)) {
             log.debug("Email notification type {} is disabled for user {}", notificationType, recipient.getId());
             return;
         }
 
+        log.debug("Sending email notification to {}", recipient.getEmail());
         sendEmail(recipient.getEmail(), subject, body);
     }
 
@@ -192,7 +195,9 @@ public class EmailNotificationService {
      */
     private boolean isEmailNotificationEnabled(Long userId, String notificationType) {
         var pref = preferenceRepository.findByUserIdAndNotificationType(userId, notificationType);
-        return pref.map(EmailNotificationPreferenceEntity::getEnabled).orElse(true); // Default to enabled
+        boolean enabled = pref.map(EmailNotificationPreferenceEntity::getEnabled).orElse(true); // Default to enabled
+        log.debug("Email preference for user {} type {}: {} (found: {})", userId, notificationType, enabled, pref.isPresent());
+        return enabled;
     }
 
     /**
@@ -211,14 +216,20 @@ public class EmailNotificationService {
      * Check if SMTP is configured
      */
     private boolean isSmtpConfigured() {
-        return smtpHost != null && !smtpHost.isBlank() &&
+        boolean configured = smtpHost != null && !smtpHost.isBlank() &&
                 fromAddress != null && !fromAddress.isBlank();
+        if (!configured) {
+            log.debug("SMTP not configured: smtpHost='{}', fromAddress='{}'", smtpHost, fromAddress);
+        }
+        return configured;
     }
 
     /**
      * Send raw email
      */
     private void sendEmail(String to, String subject, String body) {
+        log.debug("sendEmail called: to={}, smtpHost={}, fromAddress={}", to, smtpHost, fromAddress);
+        
         if (!isSmtpConfigured()) {
             log.info("SMTP not configured; skipping email to {}", to);
             return;
@@ -233,7 +244,7 @@ public class EmailNotificationService {
             mailSender.send(msg);
             log.info("Email sent successfully to {}", to);
         } catch (Exception e) {
-            log.warn("Failed to send email to {}: {}", to, e.getMessage());
+            log.warn("Failed to send email to {}: {}", to, e.getMessage(), e);
         }
     }
 }

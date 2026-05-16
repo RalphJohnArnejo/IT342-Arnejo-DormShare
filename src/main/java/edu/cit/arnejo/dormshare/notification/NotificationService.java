@@ -2,7 +2,6 @@ package edu.cit.arnejo.dormshare.notification;
 
 import edu.cit.arnejo.dormshare.shared.dto.ApiResponse;
 import edu.cit.arnejo.dormshare.notification.entity.NotificationEntity;
-import edu.cit.arnejo.dormshare.notification.NotificationRepository;
 import edu.cit.arnejo.dormshare.shared.entity.UserEntity;
 import edu.cit.arnejo.dormshare.shared.entity.UserRepository;
 import org.springframework.data.domain.PageRequest;
@@ -105,6 +104,8 @@ public class NotificationService {
             case "SETTLEMENT_REMINDER" -> emailNotificationService.sendNotification(user, type, title, body);
             case "GROUP_MEMBER_ADDED" -> emailNotificationService.sendNotification(user, type, title, body);
             case "PAYMENT_RECEIVED" -> emailNotificationService.sendNotification(user, type, title, body);
+            case "PANTRY_UPDATED" -> emailNotificationService.sendNotification(user, type, title, body);
+            case "DEBT_SETTLED" -> emailNotificationService.sendNotification(user, type, title, body);
             default -> {} // Silently ignore unknown types
         }
     }

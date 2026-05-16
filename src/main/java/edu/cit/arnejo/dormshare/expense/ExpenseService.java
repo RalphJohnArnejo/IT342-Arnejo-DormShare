@@ -96,6 +96,26 @@ public class ExpenseService {
             splitRepository.save(split);
         }
 
+        // Send expense notifications to all split participants (except payer)
+        UserEntity payerUser = payer.get();
+        String payerName = payerUser.getFirstName() + " " + payerUser.getLastName();
+        String expenseTitle = request.getDescription();
+        
+        for (ExpenseRequest.SplitRequest splitReq : request.getSplits()) {
+            // Only notify other users, not the payer
+            if (!splitReq.getUserId().equals(paidById)) {
+                Optional<UserEntity> recipient = userRepository.findById(splitReq.getUserId());
+                if (recipient.isPresent()) {
+                    notificationService.create(
+                        splitReq.getUserId(),
+                        "EXPENSE_CREATED",
+                        "New Expense: " + expenseTitle,
+                        payerName + " added an expense: " + expenseTitle
+                    );
+                }
+            }
+        }
+
         return ApiResponse.ok(mapToResponse(expense));
     }
 
