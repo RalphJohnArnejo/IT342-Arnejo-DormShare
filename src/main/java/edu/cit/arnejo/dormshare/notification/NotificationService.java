@@ -3,6 +3,8 @@ package edu.cit.arnejo.dormshare.notification;
 import edu.cit.arnejo.dormshare.shared.dto.ApiResponse;
 import edu.cit.arnejo.dormshare.notification.entity.NotificationEntity;
 import edu.cit.arnejo.dormshare.notification.NotificationRepository;
+import edu.cit.arnejo.dormshare.shared.entity.UserEntity;
+import edu.cit.arnejo.dormshare.shared.entity.UserRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,9 +16,15 @@ import java.util.Optional;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
+    private final EmailNotificationService emailNotificationService;
 
-    public NotificationService(NotificationRepository notificationRepository) {
+    public NotificationService(NotificationRepository notificationRepository,
+                              UserRepository userRepository,
+                              EmailNotificationService emailNotificationService) {
         this.notificationRepository = notificationRepository;
+        this.userRepository = userRepository;
+        this.emailNotificationService = emailNotificationService;
     }
 
     @Transactional
@@ -28,6 +36,9 @@ public class NotificationService {
         n.setBody(body);
         n.setIsRead(false);
         notificationRepository.save(n);
+
+        // Send email notification if enabled
+        sendEmailNotificationForType(userId, type, title, body);
     }
 
     @Transactional
@@ -74,5 +85,27 @@ public class NotificationService {
         }
         notificationRepository.saveAll(unread);
         return ApiResponse.ok(null);
+    }
+
+    /**
+     * Send email notification based on notification type
+     */
+    private void sendEmailNotificationForType(Long userId, String type, String title, String body) {
+        Optional<UserEntity> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            return;
+        }
+
+        UserEntity user = userOpt.get();
+
+        // Route to appropriate email notification method based on type
+        switch (type) {
+            case "EXPENSE_CREATED" -> emailNotificationService.sendNotification(user, type, title, body);
+            case "GROUP_INVITATION" -> emailNotificationService.sendNotification(user, type, title, body);
+            case "SETTLEMENT_REMINDER" -> emailNotificationService.sendNotification(user, type, title, body);
+            case "GROUP_MEMBER_ADDED" -> emailNotificationService.sendNotification(user, type, title, body);
+            case "PAYMENT_RECEIVED" -> emailNotificationService.sendNotification(user, type, title, body);
+            default -> {} // Silently ignore unknown types
+        }
     }
 }
