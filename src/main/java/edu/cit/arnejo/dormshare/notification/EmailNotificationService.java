@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
@@ -40,6 +41,7 @@ public class EmailNotificationService {
     /**
      * Send a templated email notification if user has enabled this notification type
      */
+    @Async
     public void sendNotification(UserEntity recipient, String notificationType, String subject, String body) {
         if (recipient == null || recipient.getEmail() == null || recipient.getEmail().isBlank()) {
             log.warn("Cannot send notification: recipient email is invalid");
@@ -61,6 +63,7 @@ public class EmailNotificationService {
     /**
      * Send email notification for expense creation
      */
+    @Async
     public void sendExpenseCreatedNotification(UserEntity recipient, String expenseTitle, String creatorName, String groupName) {
         String subject = "DormShare: New Expense in " + groupName;
         String body = buildEmailTemplate(
@@ -78,6 +81,7 @@ public class EmailNotificationService {
     /**
      * Send email notification for group invitation
      */
+    @Async
     public void sendGroupInvitationNotification(UserEntity recipient, String inviterName, String groupName) {
         String subject = "DormShare: You're invited to " + groupName;
         String body = buildEmailTemplate(
@@ -93,6 +97,7 @@ public class EmailNotificationService {
     /**
      * Send email notification for settlement reminder
      */
+    @Async
     public void sendSettlementReminderNotification(UserEntity recipient, String creditorName, String amount, String expenseTitle) {
         String subject = "DormShare: Settlement Reminder";
         String body = buildEmailTemplate(
@@ -110,6 +115,7 @@ public class EmailNotificationService {
     /**
      * Send email notification for user registration
      */
+    @Async
     public void sendWelcomeNotification(UserEntity user) {
         String subject = "Welcome to DormShare!";
         String body = buildEmailTemplate(
@@ -125,6 +131,7 @@ public class EmailNotificationService {
     /**
      * Send email notification for account changes
      */
+    @Async
     public void sendAccountChangeNotification(UserEntity user, String changeType) {
         String subject = "DormShare: Account Update";
         String message = switch (changeType) {
@@ -147,6 +154,7 @@ public class EmailNotificationService {
     /**
      * Send email notification for group member added
      */
+    @Async
     public void sendGroupMemberAddedNotification(UserEntity newMember, String groupName, String addedByName) {
         String subject = "DormShare: Added to " + groupName;
         String body = buildEmailTemplate(
@@ -162,6 +170,7 @@ public class EmailNotificationService {
     /**
      * Send email notification for group member removal
      */
+    @Async
     public void sendGroupMemberRemovedNotification(UserEntity removedMember, String groupName) {
         String subject = "DormShare: Removed from " + groupName;
         String body = buildEmailTemplate(
@@ -177,6 +186,7 @@ public class EmailNotificationService {
     /**
      * Send email notification for payment received
      */
+    @Async
     public void sendPaymentReceivedNotification(UserEntity recipient, String senderName, String amount, String expenseTitle) {
         String subject = "DormShare: Payment Received";
         String body = buildEmailTemplate(
