@@ -6,6 +6,8 @@ import edu.cit.arnejo.dormshare.auth.dto.LoginRequest;
 import edu.cit.arnejo.dormshare.auth.dto.RegisterRequest;
 import edu.cit.arnejo.dormshare.shared.entity.UserEntity;
 import edu.cit.arnejo.dormshare.shared.entity.UserRepository;
+import edu.cit.arnejo.dormshare.notification.EmailNotificationPreferenceService;
+import edu.cit.arnejo.dormshare.notification.EmailNotificationService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -19,11 +21,19 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final EmailNotificationPreferenceService emailNotificationPreferenceService;
+    private final EmailNotificationService emailNotificationService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public UserService(UserRepository userRepository, 
+                      PasswordEncoder passwordEncoder, 
+                      JwtUtil jwtUtil,
+                      EmailNotificationPreferenceService emailNotificationPreferenceService,
+                      EmailNotificationService emailNotificationService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.emailNotificationPreferenceService = emailNotificationPreferenceService;
+        this.emailNotificationService = emailNotificationService;
     }
 
     /**
@@ -59,6 +69,12 @@ public class UserService {
         user.setRole("USER");
 
         userRepository.save(user);
+
+        // Initialize email notification preferences for new user
+        emailNotificationPreferenceService.initializeDefaultPreferences(user.getId());
+
+        // Send welcome email
+        emailNotificationService.sendWelcomeNotification(user);
 
         // Generate JWT token
         String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole());
