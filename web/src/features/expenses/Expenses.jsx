@@ -4,7 +4,6 @@ import { createWorker } from 'tesseract.js';
 import { 
   getExpenseLedger, 
   logExpense, 
-  getAllRoommates, 
   getExpenseSummary,
   settleSplit,
   getMyGroups
@@ -88,17 +87,19 @@ function Expenses() {
   const fetchData = async (groupId = selectedGroup) => {
     try {
       setLoading(true);
-      const [ledgerRes, summaryRes, roommatesRes] = await Promise.all([
+      const [ledgerRes, summaryRes] = await Promise.all([
         getExpenseLedger(groupId),
-        getExpenseSummary(groupId),
-        getAllRoommates()
+        getExpenseSummary(groupId)
       ]);
 
       if (ledgerRes.success) setLedger(ledgerRes.data || []);
       if (summaryRes.success) setSummary(summaryRes.data || { owedToYou: 0, youOwe: 0, netBalance: 0 });
-      if (roommatesRes.success) {
-        // Filter out current user from roommate selector
-        const others = (roommatesRes.data || []).filter(rm => rm.id !== user.userId);
+      
+      // Get group members from the groups array instead of all roommates
+      const selectedGroupData = groups.find(g => g.id === groupId);
+      if (selectedGroupData && selectedGroupData.members) {
+        // Filter out current user and get only group members
+        const others = (selectedGroupData.members || []).filter(rm => rm.userId !== user.userId);
         setRoommates(others);
       }
     } catch (err) {
@@ -468,10 +469,10 @@ function Expenses() {
                   ) : (
                     roommates.map(rm => (
                       <button 
-                        key={rm.id} 
+                        key={rm.userId} 
                         type="button"
-                        className={`rm-pill ${selectedRoommates.includes(rm.id) ? 'active' : ''}`}
-                        onClick={() => toggleRoommate(rm.id)}
+                        className={`rm-pill ${selectedRoommates.includes(rm.userId) ? 'active' : ''}`}
+                        onClick={() => toggleRoommate(rm.userId)}
                       >
                         {rm.name}
                       </button>
@@ -517,7 +518,7 @@ function Expenses() {
                   {splitType === 'custom' && (
                     <div className="custom-split-inputs">
                       {selectedRoommates.map(rid => {
-                        const rm = roommates.find(r => r.id === rid);
+                        const rm = roommates.find(r => r.userId === rid);
                         return (
                           <div key={rid} className="custom-row">
                             <span>{rm?.name || 'User'} owes:</span>
