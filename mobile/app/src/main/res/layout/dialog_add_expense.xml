@@ -10,6 +10,62 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <!-- Scan Receipt (Optional) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="16dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnScanReceipt"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📷  Scan Receipt (Optional)"
+                android:textSize="14sp"
+                android:textAllCaps="false"
+                app:cornerRadius="8dp"
+                app:strokeColor="#c49a3c" />
+
+            <TextView
+                android:id="@+id/tvOcrStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Scanning receipt…"
+                android:textColor="#c49a3c"
+                android:textSize="13sp"
+                android:textAlignment="center"
+                android:padding="8dp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/layoutOcrResult"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card_dark_rounded"
+                android:padding="12dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="✅ Receipt scanned!"
+                    android:textColor="#17A34B"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvOcrDetails"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="#94a3b8"
+                    android:textSize="12sp"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+        </LinearLayout>
+
         <!-- Description -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"

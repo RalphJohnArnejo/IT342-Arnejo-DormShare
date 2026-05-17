@@ -1,6 +1,8 @@
 package edu.cit.arnejo.dormshare.expense
 
 import android.content.Intent
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.AdapterView
@@ -8,13 +10,18 @@ import android.widget.ArrayAdapter
 import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.textfield.TextInputEditText
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import edu.cit.arnejo.dormshare.R
 import edu.cit.arnejo.dormshare.databinding.ActivityExpensesBinding
 import edu.cit.arnejo.dormshare.group.Group
@@ -28,6 +35,7 @@ import kotlinx.coroutines.launch
  * Expenses screen — rewritten to match web Expenses.jsx.
  * Adds: category selection, roommate split selection (equal/custom),
  * group selector, settle-split inline, correct API calls.
+ * OCR receipt scanning via Google ML Kit Text Recognition.
  */
 class ExpensesActivity : AppCompatActivity() {
 
@@ -36,6 +44,20 @@ class ExpensesActivity : AppCompatActivity() {
     private var groupId: Long? = null
     private var groups: List<Group> = emptyList()
     private var groupMembers: List<GroupMember> = emptyList()
+
+    // OCR fields — will be set when dialog is open
+    private var ocrDescriptionField: TextInputEditText? = null
+    private var ocrAmountField: TextInputEditText? = null
+    private var ocrStatusView: android.widget.TextView? = null
+    private var ocrResultLayout: LinearLayout? = null
+    private var ocrDetailsView: android.widget.TextView? = null
+
+    // Image picker launcher
+    private val imagePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { processReceiptImage(it) }
+    }
 
     companion object {
         val CATEGORIES = listOf(
@@ -134,9 +156,91 @@ class ExpensesActivity : AppCompatActivity() {
         }
     }
 
+    // ===================== OCR RECEIPT SCANNING =====================
+
     /**
-     * Full expense dialog with category, roommate selection, and split method
-     * — matching web Expenses.jsx modal form.
+     * Process a receipt image using Google ML Kit Text Recognition.
+     * Extracts amount and description, then auto-fills the form.
+     * Matches web Expenses.jsx handleFileUpload logic.
+     */
+    private fun processReceiptImage(imageUri: Uri) {
+        // Show scanning status
+        ocrStatusView?.visibility = View.VISIBLE
+        ocrStatusView?.text = "⏳ Scanning receipt…"
+        ocrResultLayout?.visibility = View.GONE
+
+        try {
+            val image = InputImage.fromFilePath(this, imageUri)
+            val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
+            recognizer.process(image)
+                .addOnSuccessListener { visionText ->
+                    val fullText = visionText.text
+                    if (fullText.isBlank()) {
+                        ocrStatusView?.text = "❌ No text found in image"
+                        return@addOnSuccessListener
+                    }
+
+                    // Parse receipt — same logic as web Expenses.jsx
+                    val moneyRegex = Regex("""[₱P]?\s?(\d+[.,]\d{2})""")
+                    val matches = moneyRegex.findAll(fullText).toList()
+
+                    var detectedAmount = ""
+                    if (matches.isNotEmpty()) {
+                        val amounts = matches.map {
+                            it.groupValues[1].replace(",", ".").toDoubleOrNull() ?: 0.0
+                        }
+                        val maxAmount = amounts.maxOrNull() ?: 0.0
+                        detectedAmount = "%.2f".format(maxAmount)
+                    }
+
+                    // Guess description from first non-empty line
+                    val lines = fullText.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+                    val detectedDescription = lines.firstOrNull() ?: ""
+
+                    // Detect store/merchant name
+                    val merchantKeywords = listOf("store", "market", "shop", "mall", "grocery", "pharmacy", "supermarket")
+                    val merchant = lines.firstOrNull { line ->
+                        merchantKeywords.any { line.lowercase().contains(it) }
+                    } ?: ""
+
+                    // Auto-fill form fields
+                    if (detectedDescription.isNotEmpty()) {
+                        val desc = if (merchant.isNotEmpty()) merchant else detectedDescription
+                        ocrDescriptionField?.setText(desc)
+                    }
+                    if (detectedAmount.isNotEmpty() && detectedAmount != "0.00") {
+                        ocrAmountField?.setText(detectedAmount)
+                    }
+
+                    // Show OCR result summary
+                    ocrStatusView?.visibility = View.GONE
+                    ocrResultLayout?.visibility = View.VISIBLE
+                    val details = buildString {
+                        if (detectedAmount.isNotEmpty() && detectedAmount != "0.00")
+                            append("Amount: ₱$detectedAmount\n")
+                        if (merchant.isNotEmpty())
+                            append("Merchant: $merchant\n")
+                        append("Lines detected: ${lines.size}")
+                    }
+                    ocrDetailsView?.text = details
+
+                    Toast.makeText(this, "📷 Receipt scanned! Review details.", Toast.LENGTH_SHORT).show()
+                }
+                .addOnFailureListener { e ->
+                    ocrStatusView?.text = "❌ Scan failed: ${e.message}"
+                    ocrResultLayout?.visibility = View.GONE
+                }
+        } catch (e: Exception) {
+            ocrStatusView?.text = "❌ Error: ${e.message}"
+        }
+    }
+
+    // ===================== ADD EXPENSE DIALOG =====================
+
+    /**
+     * Full expense dialog with category, roommate selection, split method,
+     * and OCR receipt scanning — matching web Expenses.jsx modal form.
      */
     private fun showAddExpenseDialog() {
         val dialogView = layoutInflater.inflate(
@@ -158,6 +262,19 @@ class ExpensesActivity : AppCompatActivity() {
         val tvSplitPreview = dialogView.findViewById<android.widget.TextView>(
             R.id.tvSplitPreview
         )
+
+        // OCR views
+        val btnScanReceipt = dialogView.findViewById<MaterialButton>(R.id.btnScanReceipt)
+        ocrStatusView = dialogView.findViewById(R.id.tvOcrStatus)
+        ocrResultLayout = dialogView.findViewById(R.id.layoutOcrResult)
+        ocrDetailsView = dialogView.findViewById(R.id.tvOcrDetails)
+        ocrDescriptionField = etDescription
+        ocrAmountField = etAmount
+
+        // Scan receipt button — launch image picker
+        btnScanReceipt.setOnClickListener {
+            imagePickerLauncher.launch("image/*")
+        }
 
         // Setup category spinner
         val categoryAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, CATEGORIES)

@@ -81,6 +81,9 @@ dependencies {
     // SwipeRefreshLayout
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
+    // Google ML Kit Text Recognition (OCR for receipt scanning)
+    implementation("com.google.mlkit:text-recognition:16.0.1")
+
     // Chrome Custom Tabs for Google OAuth2
     implementation("androidx.browser:browser:1.8.0")
 
