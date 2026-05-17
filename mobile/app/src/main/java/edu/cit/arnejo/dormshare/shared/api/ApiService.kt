@@ -124,6 +124,15 @@ interface ApiService {
     @POST("api/payments/initiate")
     suspend fun initiatePayment(@Body body: Map<String, Any>): Response<ApiResponse<Any>>
 
+    @POST("api/payments/stripe/intent")
+    suspend fun createStripeIntent(@Body body: Map<String, Any>): Response<ApiResponse<Map<String, Any>>>
+
+    @POST("api/payments/stripe/confirm")
+    suspend fun confirmStripePayment(@Body body: Map<String, Any>): Response<ApiResponse<Map<String, Any>>>
+
+    @PATCH("api/expenses/settle/{splitId}")
+    suspend fun settleSplit(@Path("splitId") splitId: Long): Response<ApiResponse<Any>>
+
     // ==================== USER PROFILE ENDPOINTS ====================
 
     @GET("api/users/me")

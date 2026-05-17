@@ -23,9 +23,10 @@ import edu.cit.arnejo.dormshare.shared.auth.SessionManager
 import kotlinx.coroutines.launch
 
 /**
- * Settlements screen — completely rewritten to match web Settlement.jsx.
+ * Settlements screen — matches web Settlement.jsx.
  * Uses correct endpoints: /api/ledger/summary and /api/ledger/history.
- * Features: You Owe / You Receive / History tabs, group selector, settle action.
+ * Features: You Owe / You Receive / History tabs, group selector,
+ *           Stripe card payment + manual settle.
  */
 class SettlementsActivity : AppCompatActivity() {
 
@@ -44,6 +45,9 @@ class SettlementsActivity : AppCompatActivity() {
 
     private lateinit var debtAdapter: SettlementDebtAdapter
     private lateinit var historyAdapter: SettlementHistoryAdapter
+
+    // Track selected payment method in dialog
+    private var useStripe = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,7 +73,7 @@ class SettlementsActivity : AppCompatActivity() {
         rvSettlements.layoutManager = LinearLayoutManager(this)
 
         debtAdapter = SettlementDebtAdapter(emptyList()) { debt ->
-            confirmSettle(debt)
+            showPaymentDialog(debt)
         }
         historyAdapter = SettlementHistoryAdapter(emptyList())
 
@@ -120,7 +124,6 @@ class SettlementsActivity : AppCompatActivity() {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerGroup.adapter = adapter
 
-        // Set initial selection
         val idx = groups.indexOfFirst { it.id == selectedGroupId }
         if (idx >= 0) spinnerGroup.setSelection(idx)
 
@@ -141,13 +144,11 @@ class SettlementsActivity : AppCompatActivity() {
         swipeRefresh.isRefreshing = true
         lifecycleScope.launch {
             try {
-                // Load summary (debts)
                 val summaryResponse = RetrofitClient.apiService.getLedgerSummary(selectedGroupId)
                 if (summaryResponse.isSuccessful) {
                     allDebts = summaryResponse.body()?.data?.debts ?: emptyList()
                 }
 
-                // Load history
                 val historyResponse = RetrofitClient.apiService.getLedgerHistory(selectedGroupId)
                 if (historyResponse.isSuccessful) {
                     historyItems = historyResponse.body()?.data ?: emptyList()
@@ -197,30 +198,154 @@ class SettlementsActivity : AppCompatActivity() {
         }
     }
 
-    private fun confirmSettle(debt: SettlementDebt) {
-        AlertDialog.Builder(this)
-            .setTitle("Settle Payment")
-            .setMessage("Mark ₱${"%.2f".format(debt.amount)} to ${debt.toUserName} as settled?")
-            .setPositiveButton("Settle") { _, _ -> settleDebt(debt) }
-            .setNegativeButton("Cancel", null)
-            .show()
+    /**
+     * Shows the Payment Details dialog matching the web Settlement.jsx payment modal.
+     * Two options: Card Payment (Stripe) or Mark as Settled (Manual).
+     */
+    private fun showPaymentDialog(debt: SettlementDebt) {
+        useStripe = true
+        val dialogView = layoutInflater.inflate(R.layout.dialog_payment_details, null)
+
+        // Populate payee info
+        dialogView.findViewById<TextView>(R.id.tvPayeeName).text = debt.toUserName ?: "User"
+        dialogView.findViewById<TextView>(R.id.tvPaymentAmount).text =
+            "\u20B1${"%.2f".format(debt.amount)}"
+
+        val radioStripe = dialogView.findViewById<View>(R.id.radioStripe)
+        val radioManual = dialogView.findViewById<View>(R.id.radioManual)
+        val optionStripe = dialogView.findViewById<View>(R.id.optionStripe)
+        val optionManual = dialogView.findViewById<View>(R.id.optionManual)
+        val btnConfirm = dialogView.findViewById<MaterialButton>(R.id.btnConfirmPayment)
+        val btnCancel = dialogView.findViewById<MaterialButton>(R.id.btnCancelPayment)
+
+        fun updateRadios() {
+            radioStripe.setBackgroundResource(
+                if (useStripe) R.drawable.bg_radio_selected else R.drawable.bg_radio_unselected
+            )
+            radioManual.setBackgroundResource(
+                if (!useStripe) R.drawable.bg_radio_selected else R.drawable.bg_radio_unselected
+            )
+            btnConfirm.text = if (useStripe) "Confirm Payment" else "Mark as Settled"
+        }
+
+        optionStripe.setOnClickListener { useStripe = true; updateRadios() }
+        optionManual.setOnClickListener { useStripe = false; updateRadios() }
+        updateRadios()
+
+        val dialog = AlertDialog.Builder(this, R.style.Theme_DormShare_Dialog)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        btnCancel.setOnClickListener { dialog.dismiss() }
+
+        btnConfirm.setOnClickListener {
+            btnConfirm.isEnabled = false
+            btnConfirm.text = "Processing..."
+
+            if (useStripe) {
+                processStripePayment(debt, dialog, btnConfirm)
+            } else {
+                processManualSettle(debt, dialog, btnConfirm)
+            }
+        }
+
+        dialog.show()
     }
 
-    private fun settleDebt(debt: SettlementDebt) {
+    /**
+     * Stripe payment flow:
+     * 1. POST /api/payments/stripe/intent  → get paymentIntentId
+     * 2. POST /api/payments/stripe/confirm → auto-succeed in mock/sandbox mode
+     * 3. Backend marks the split as settled
+     */
+    private fun processStripePayment(
+        debt: SettlementDebt, dialog: AlertDialog, btn: MaterialButton
+    ) {
+        lifecycleScope.launch {
+            try {
+                // Step 1: Create payment intent
+                val intentBody = mapOf<String, Any>(
+                    "payeeId" to (debt.toUserId),
+                    "amount" to debt.amount,
+                    "groupId" to (selectedGroupId ?: 0L),
+                    "description" to "Settlement to ${debt.toUserName}"
+                )
+                val intentResponse = RetrofitClient.apiService.createStripeIntent(intentBody)
+
+                if (!intentResponse.isSuccessful || intentResponse.body()?.success != true) {
+                    val msg = intentResponse.body()?.error?.message ?: "Failed to create payment"
+                    showToast(msg)
+                    resetBtn(btn, "Confirm Payment")
+                    return@launch
+                }
+
+                val intentData = intentResponse.body()?.data ?: emptyMap()
+                val paymentIntentId = intentData["paymentIntentId"]?.toString() ?: ""
+
+                // Step 2: Confirm payment (sandbox auto-succeeds)
+                val confirmBody = mapOf<String, Any>(
+                    "paymentIntentId" to paymentIntentId,
+                    "settlementId" to (debt.splitId?.toString() ?: "")
+                )
+                val confirmResponse = RetrofitClient.apiService.confirmStripePayment(confirmBody)
+
+                if (confirmResponse.isSuccessful && confirmResponse.body()?.success == true) {
+                    val status = confirmResponse.body()?.data?.get("status")?.toString()
+                    if (status == "succeeded") {
+                        showToast("\uD83D\uDCB3 Payment successful! Settlement recorded.")
+                        dialog.dismiss()
+                        loadSettlementData()
+                    } else {
+                        showToast("Payment status: $status")
+                        resetBtn(btn, "Confirm Payment")
+                    }
+                } else {
+                    val msg = confirmResponse.body()?.error?.message ?: "Confirmation failed"
+                    showToast(msg)
+                    resetBtn(btn, "Confirm Payment")
+                }
+            } catch (e: Exception) {
+                showToast("Error: ${e.message}")
+                resetBtn(btn, "Confirm Payment")
+            }
+        }
+    }
+
+    /**
+     * Manual settle — marks the split as settled without Stripe processing.
+     */
+    private fun processManualSettle(
+        debt: SettlementDebt, dialog: AlertDialog, btn: MaterialButton
+    ) {
         val splitId = debt.splitId ?: return
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.apiService.settleSplit(splitId)
                 if (response.isSuccessful && response.body()?.success == true) {
-                    Toast.makeText(this@SettlementsActivity, "Split settled!", Toast.LENGTH_SHORT).show()
+                    showToast("\u2705 Marked as settled!")
+                    dialog.dismiss()
                     loadSettlementData()
                 } else {
                     val msg = response.body()?.error?.message ?: "Failed to settle"
-                    Toast.makeText(this@SettlementsActivity, msg, Toast.LENGTH_SHORT).show()
+                    showToast(msg)
+                    resetBtn(btn, "Mark as Settled")
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@SettlementsActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                showToast("Error: ${e.message}")
+                resetBtn(btn, "Mark as Settled")
             }
         }
+    }
+
+    private fun resetBtn(btn: MaterialButton, text: String) {
+        btn.isEnabled = true
+        btn.text = text
+    }
+
+    private fun showToast(msg: String) {
+        Toast.makeText(this@SettlementsActivity, msg, Toast.LENGTH_SHORT).show()
     }
 }
