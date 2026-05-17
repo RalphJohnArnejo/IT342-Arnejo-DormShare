@@ -14,6 +14,8 @@ import edu.cit.arnejo.dormshare.profile.UpdateProfileRequest
 import edu.cit.arnejo.dormshare.profile.UserProfile
 import edu.cit.arnejo.dormshare.settlement.LedgerSummary
 import edu.cit.arnejo.dormshare.settlement.SettlementHistoryItem
+import edu.cit.arnejo.dormshare.settlement.StripeConfirmResponse
+import edu.cit.arnejo.dormshare.settlement.StripeIntentResponse
 import edu.cit.arnejo.dormshare.shared.model.ApiResponse
 import retrofit2.Response
 import retrofit2.http.*
@@ -125,10 +127,10 @@ interface ApiService {
     suspend fun initiatePayment(@Body body: Map<String, Any>): Response<ApiResponse<Any>>
 
     @POST("api/payments/stripe/intent")
-    suspend fun createStripeIntent(@Body body: Map<String, Any>): Response<ApiResponse<Any>>
+    suspend fun createStripeIntent(@Body body: Map<String, @JvmSuppressWildcards Any>): Response<ApiResponse<StripeIntentResponse>>
 
     @POST("api/payments/stripe/confirm")
-    suspend fun confirmStripePayment(@Body body: Map<String, Any>): Response<ApiResponse<Any>>
+    suspend fun confirmStripePayment(@Body body: Map<String, @JvmSuppressWildcards Any>): Response<ApiResponse<StripeConfirmResponse>>
 
     // ==================== USER PROFILE ENDPOINTS ====================
 
