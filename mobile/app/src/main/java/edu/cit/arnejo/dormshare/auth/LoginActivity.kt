@@ -1,6 +1,7 @@
 package edu.cit.arnejo.dormshare.auth
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.util.Patterns
@@ -9,13 +10,15 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
+import edu.cit.arnejo.dormshare.R
+import edu.cit.arnejo.dormshare.home.HomeActivity
 import edu.cit.arnejo.dormshare.shared.api.RetrofitClient
 import edu.cit.arnejo.dormshare.shared.auth.SessionManager
 import edu.cit.arnejo.dormshare.shared.auth.TokenProvider
-import edu.cit.arnejo.dormshare.auth.LoginRequest
 import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
@@ -80,7 +83,7 @@ class LoginActivity : AppCompatActivity() {
         }
 
         findViewById<MaterialButton>(R.id.btnGoogleSignIn).setOnClickListener {
-            Toast.makeText(this, "Google Sign-In coming soon", Toast.LENGTH_SHORT).show()
+            launchGoogleSignIn()
         }
 
         tvRegisterLink.setOnClickListener {
@@ -173,5 +176,32 @@ class LoginActivity : AppCompatActivity() {
     private fun showError(message: String) {
         tvError.text = message
         tvError.visibility = View.VISIBLE
+    }
+
+    /**
+     * Opens a Chrome Custom Tab pointing to the backend's mobile OAuth2 endpoint.
+     * The backend sets a session flag and then redirects to Google.
+     * After auth, the backend redirects to dormshare://oauth2/callback,
+     * which is caught by OAuth2CallbackActivity.
+     */
+    private fun launchGoogleSignIn() {
+        // Use localhost (requires: adb reverse tcp:8080 tcp:8080)
+        // Google OAuth2 only allows localhost redirect URIs for dev, not raw IPs
+        val baseUrl = "http://localhost:8080"
+        val oauthUrl = "$baseUrl/auth/google-mobile"
+
+        try {
+            val customTabsIntent = CustomTabsIntent.Builder()
+                .setShowTitle(true)
+                .build()
+            customTabsIntent.launchUrl(this, Uri.parse(oauthUrl))
+        } catch (e: Exception) {
+            // Fallback to regular browser if Chrome Custom Tabs not available
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(oauthUrl)))
+            } catch (e2: Exception) {
+                Toast.makeText(this, "No browser available for Google Sign-In", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 }

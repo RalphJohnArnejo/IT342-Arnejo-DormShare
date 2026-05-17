@@ -30,12 +30,31 @@
         <!-- Registration Screen -->
         <activity android:name=".auth.RegisterActivity" />
 
-        <!-- Home Screen (After Login) -->
+        <!-- OAuth2 Deep Link Callback (Google Sign-In from Chrome Custom Tab) -->
+        <activity
+            android:name=".auth.OAuth2CallbackActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="dormshare"
+                    android:host="oauth2"
+                    android:pathPrefix="/callback" />
+            </intent-filter>
+        </activity>
+        <!-- Main Feature Screens -->
         <activity android:name=".home.HomeActivity" />
         <activity android:name=".expense.ExpensesActivity" />
         <activity android:name=".group.GroupsActivity" />
         <activity android:name=".settlement.SettlementsActivity" />
         <activity android:name=".pantry.PantryActivity" />
+
+        <!-- NEW: Profile & Notifications -->
+        <activity android:name=".profile.ProfileActivity" />
+        <activity android:name=".notification.NotificationsActivity" />
 
     </application>
 </manifest>

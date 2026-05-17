@@ -38,7 +38,8 @@
                 android:id="@+id/btnEditItem"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
-                android:src="@android:drawable/ic_menu_edit"
+                android:src="@drawable/ic_edit_pencil"
+                android:scaleType="centerInside"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Edit" />
 
@@ -46,7 +47,8 @@
                 android:id="@+id/btnDeleteItem"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
-                android:src="@android:drawable/ic_menu_delete"
+                android:src="@drawable/ic_delete_trash"
+                android:scaleType="centerInside"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Delete" />
 

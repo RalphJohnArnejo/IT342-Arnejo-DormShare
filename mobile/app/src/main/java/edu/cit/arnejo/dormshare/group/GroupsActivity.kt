@@ -47,24 +47,16 @@ class GroupsActivity : AppCompatActivity() {
     private fun loadGroups() {
         lifecycleScope.launch {
             try {
-                val memToken = edu.cit.arnejo.dormshare.shared.auth.TokenProvider.token
-                val sessionToken = edu.cit.arnejo.dormshare.shared.auth.SessionManager.getToken(this@GroupsActivity)
-                android.util.Log.d("GROUPS_DEBUG", "MemToken: ${memToken?.take(20)}...")
-                android.util.Log.d("GROUPS_DEBUG", "SessionToken: ${sessionToken?.take(20)}...")
                 val response = RetrofitClient.apiService.getGroups()
-                android.util.Log.d("GROUPS_DEBUG", "Response code: ${response.code()}")
                 if (response.isSuccessful) {
                     val list = response.body()?.data ?: emptyList()
                     adapter.update(list)
                     binding.tvEmptyGroups.visibility = if (list.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
                 } else {
-                    val errorBody = response.errorBody()?.string() ?: "no body"
-                    val tokenInfo = "mem=${memToken != null}, session=${sessionToken != null}"
-                    Toast.makeText(this@GroupsActivity, "Failed (${response.code()}) token:[$tokenInfo]", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@GroupsActivity, "Failed to load groups", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                android.util.Log.e("GROUPS_DEBUG", "Exception", e)
-                Toast.makeText(this@GroupsActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@GroupsActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -93,13 +85,13 @@ class GroupsActivity : AppCompatActivity() {
     private fun createGroup(name: String) {
         lifecycleScope.launch {
             try {
-                val group = Group(id = 0, name = name)
-                val response = RetrofitClient.apiService.createGroup(group)
+                val response = RetrofitClient.apiService.createGroup(mapOf("name" to name))
                 if (response.isSuccessful) {
-                    Toast.makeText(this@GroupsActivity, "Group created!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@GroupsActivity, "Group \"$name\" created!", Toast.LENGTH_SHORT).show()
                     loadGroups()
                 } else {
-                    Toast.makeText(this@GroupsActivity, "Failed to create group", Toast.LENGTH_SHORT).show()
+                    val msg = response.body()?.error?.message ?: "Failed to create group"
+                    Toast.makeText(this@GroupsActivity, msg, Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 Toast.makeText(this@GroupsActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()

@@ -35,4 +35,36 @@
     <string name="error_short_password">Password must be at least 8 characters</string>
     <string name="error_network">Network error. Please check your connection.</string>
     <string name="loading">Please wait…</string>
+
+    <!-- Profile Screen -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_subtitle">Manage your account</string>
+    <string name="edit_profile">Edit</string>
+    <string name="save_changes">Save Changes</string>
+    <string name="change_password">Change Password</string>
+    <string name="update_password">Update Password</string>
+
+    <!-- Notifications Screen -->
+    <string name="notifications_title">Notifications</string>
+    <string name="mark_all_read">Mark all read</string>
+    <string name="no_notifications">No notifications yet</string>
+
+    <!-- Settlements Screen -->
+    <string name="settlements_title">Settlements</string>
+    <string name="tab_you_owe">You Owe</string>
+    <string name="tab_you_receive">You Receive</string>
+    <string name="tab_history">History</string>
+    <string name="settle_payment">Settle Payment</string>
+
+    <!-- Expense Screen -->
+    <string name="expenses_title">Expenses</string>
+    <string name="log_expense">Log Expense</string>
+    <string name="select_roommates">Split With</string>
+    <string name="category">Category</string>
+
+    <!-- General -->
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="update">Update</string>
+    <string name="save">Save</string>
 </resources>

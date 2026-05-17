@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Bottom nav icon/text colors.
+     Active: white, Inactive: white at 60% opacity -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:color="@color/primary" android:state_checked="true" />
-    <item android:color="@color/text_secondary" />
+    <item android:color="#FFFFFF" android:state_checked="true" />
+    <item android:color="#FFFFFFFF" />
 </selector>

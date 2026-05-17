@@ -68,15 +68,28 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole());
             logger.info("Token generated successfully");
 
-            // Redirect to frontend with token (URL-encoded to handle special characters)
-            String redirectUrl = frontendUrl + "/oauth2/callback?"
-                    + "token=" + URLEncoder.encode(token, StandardCharsets.UTF_8)
+            // Build query params (shared between web and mobile)
+            String queryParams = "token=" + URLEncoder.encode(token, StandardCharsets.UTF_8)
                     + "&userId=" + URLEncoder.encode(user.getId().toString(), StandardCharsets.UTF_8)
                     + "&email=" + URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8)
                     + "&firstName=" + URLEncoder.encode(user.getFirstName(), StandardCharsets.UTF_8)
                     + "&lastName=" + URLEncoder.encode(user.getLastName(), StandardCharsets.UTF_8)
                     + "&role=" + URLEncoder.encode(user.getRole(), StandardCharsets.UTF_8);
-            logger.info("Redirecting to: {}", redirectUrl);
+
+            // Check if this OAuth flow was initiated from the mobile app
+            String source = (String) request.getSession().getAttribute("oauth2_source");
+            String redirectUrl;
+            if ("mobile".equals(source)) {
+                // Redirect to the Android app's deep link scheme
+                redirectUrl = "dormshare://oauth2/callback?" + queryParams;
+                logger.info("Redirecting to mobile app: dormshare://oauth2/callback?...");
+                // Clean up session attribute
+                request.getSession().removeAttribute("oauth2_source");
+            } else {
+                // Redirect to web frontend
+                redirectUrl = frontendUrl + "/oauth2/callback?" + queryParams;
+                logger.info("Redirecting to web: {}", redirectUrl);
+            }
 
             getRedirectStrategy().sendRedirect(request, response, redirectUrl);
             logger.info("Redirect sent successfully");

@@ -1,12 +1,14 @@
 package edu.cit.arnejo.dormshare.pantry
 
+import com.google.gson.annotations.SerializedName
+
 data class PantryItem(
     val id: Long,
-    val name: String,
-    val quantity: Int,
+    @SerializedName("itemName") val name: String,
+    val quantity: Double,
     val category: String,
-    val status: String, // "in_stock", "low_stock", "out_of_stock"
+    val status: String, // "IN", "LOW", "OUT"
     val groupId: Long?,
-    val updatedBy: String?,
+    @SerializedName("updatedByName") val updatedBy: String?,
     val updatedAt: String?
 )
