@@ -130,9 +130,6 @@ interface ApiService {
     @POST("api/payments/stripe/confirm")
     suspend fun confirmStripePayment(@Body body: Map<String, Any>): Response<ApiResponse<Map<String, Any>>>
 
-    @PATCH("api/expenses/settle/{splitId}")
-    suspend fun settleSplit(@Path("splitId") splitId: Long): Response<ApiResponse<*>>
-
     // ==================== USER PROFILE ENDPOINTS ====================
 
     @GET("api/users/me")
