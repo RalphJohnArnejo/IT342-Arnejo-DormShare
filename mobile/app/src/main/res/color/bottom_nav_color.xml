@@ -3,5 +3,5 @@
      Active: white, Inactive: white at 60% opacity -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:color="#FFFFFF" android:state_checked="true" />
-    <item android:color="#99FFFFFF" />
+    <item android:color="#FFFFFFFF" />
 </selector>

@@ -285,9 +285,10 @@ class SettlementsActivity : AppCompatActivity() {
                 val intentData = intentResponse.body()?.data
                 val paymentIntentId = intentData?.paymentIntentId ?: ""
 
-                // Step 2: Confirm payment (sandbox auto-succeeds)
+                // Step 2: Confirm payment (send mock payment method for sandbox)
                 val confirmBody = mapOf<String, Any>(
                     "paymentIntentId" to paymentIntentId,
+                    "paymentMethodId" to "pm_card_visa",
                     "settlementId" to (debt.splitId?.toString() ?: "")
                 )
                 val confirmResponse = RetrofitClient.apiService.confirmStripePayment(confirmBody)
