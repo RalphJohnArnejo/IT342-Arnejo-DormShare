@@ -188,18 +188,25 @@ class ExpensesActivity : AppCompatActivity() {
                     var detectedAmount = ""
 
                     // Strategy 1: Search raw text for "TOTAL" followed by amount
-                    // This handles cases where ML Kit keeps them on the same line
+                    // Use [\s\S]*? to match across newlines (ML Kit often splits them)
                     val totalPatterns = listOf(
-                        Regex("""(?i)\btotal\b[^0-9]*(\d+[.,]\d{2})"""),
-                        Regex("""(?i)\bsubtotal\b[^0-9]*(\d+[.,]\d{2})"""),
-                        Regex("""(?i)\bamount\s+due\b[^0-9]*(\d+[.,]\d{2})"""),
-                        Regex("""(?i)\bgrand\s+total\b[^0-9]*(\d+[.,]\d{2})""")
+                        Regex("""(?i)\btotal\b[\s\S]*?(\d+[.,]\d{2})"""),
+                        Regex("""(?i)\bsubtotal\b[\s\S]*?(\d+[.,]\d{2})"""),
+                        Regex("""(?i)\bamount\s+due\b[\s\S]*?(\d+[.,]\d{2})"""),
+                        Regex("""(?i)\bgrand\s+total\b[\s\S]*?(\d+[.,]\d{2})""")
                     )
                     for (pattern in totalPatterns) {
                         val match = pattern.find(fullText)
                         if (match != null) {
-                            detectedAmount = match.groupValues[1].replace(",", ".")
-                            break
+                            // Verify it's not on a CASH/CHANGE line
+                            val context = fullText.substring(
+                                maxOf(0, match.range.first - 30),
+                                minOf(fullText.length, match.range.last + 1)
+                            ).lowercase()
+                            if (!context.contains("cash") && !context.contains("change")) {
+                                detectedAmount = match.groupValues[1].replace(",", ".")
+                                break
+                            }
                         }
                     }
 
