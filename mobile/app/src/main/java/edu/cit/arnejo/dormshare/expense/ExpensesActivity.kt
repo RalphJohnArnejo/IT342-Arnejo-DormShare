@@ -189,6 +189,9 @@ class ExpensesActivity : AppCompatActivity() {
 
                     // Strategy 1: Search raw text for "TOTAL" followed by amount
                     // Use [\s\S]*? to match across newlines (ML Kit often splits them)
+                    // Non-greedy ensures we get the FIRST amount right after TOTAL
+                    android.util.Log.d("OCR_DEBUG", "Raw text:\n$fullText")
+
                     val totalPatterns = listOf(
                         Regex("""(?i)\btotal\b[\s\S]*?(\d+[.,]\d{2})"""),
                         Regex("""(?i)\bsubtotal\b[\s\S]*?(\d+[.,]\d{2})"""),
@@ -198,15 +201,10 @@ class ExpensesActivity : AppCompatActivity() {
                     for (pattern in totalPatterns) {
                         val match = pattern.find(fullText)
                         if (match != null) {
-                            // Verify it's not on a CASH/CHANGE line
-                            val context = fullText.substring(
-                                maxOf(0, match.range.first - 30),
-                                minOf(fullText.length, match.range.last + 1)
-                            ).lowercase()
-                            if (!context.contains("cash") && !context.contains("change")) {
-                                detectedAmount = match.groupValues[1].replace(",", ".")
-                                break
-                            }
+                            val captured = match.groupValues[1].replace(",", ".")
+                            android.util.Log.d("OCR_DEBUG", "Strategy 1 matched: '${match.value}' → amount=$captured")
+                            detectedAmount = captured
+                            break
                         }
                     }
 
