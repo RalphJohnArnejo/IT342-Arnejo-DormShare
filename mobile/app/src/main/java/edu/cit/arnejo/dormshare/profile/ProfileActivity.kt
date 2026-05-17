@@ -8,11 +8,14 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.cardview.widget.CardView
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import edu.cit.arnejo.dormshare.R
 import edu.cit.arnejo.dormshare.auth.LoginActivity
+import edu.cit.arnejo.dormshare.group.Group
+import edu.cit.arnejo.dormshare.settlement.SettlementsActivity
 import edu.cit.arnejo.dormshare.shared.api.RetrofitClient
 import edu.cit.arnejo.dormshare.shared.auth.SessionManager
 import edu.cit.arnejo.dormshare.shared.auth.TokenProvider
@@ -58,6 +61,14 @@ class ProfileActivity : AppCompatActivity() {
     private lateinit var btnLogout: MaterialButton
     private lateinit var progressBar: ProgressBar
 
+    // My Groups
+    private lateinit var layoutGroupsList: LinearLayout
+    private lateinit var tvGroupCount: TextView
+    private lateinit var tvNoGroups: TextView
+
+    // Settlement
+    private lateinit var cardSettlement: CardView
+
     private var currentProfile: UserProfile? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,6 +78,7 @@ class ProfileActivity : AppCompatActivity() {
         initViews()
         setupClickListeners()
         loadProfile()
+        loadGroups()
     }
 
     private fun initViews() {
@@ -98,6 +110,14 @@ class ProfileActivity : AppCompatActivity() {
 
         btnLogout = findViewById(R.id.btnLogout)
         progressBar = findViewById(R.id.progressBar)
+
+        // My Groups
+        layoutGroupsList = findViewById(R.id.layoutGroupsList)
+        tvGroupCount = findViewById(R.id.tvGroupCount)
+        tvNoGroups = findViewById(R.id.tvNoGroups)
+
+        // Settlement
+        cardSettlement = findViewById(R.id.cardSettlement)
     }
 
     private fun setupClickListeners() {
@@ -117,6 +137,10 @@ class ProfileActivity : AppCompatActivity() {
         btnSubmitPassword.setOnClickListener { submitPasswordChange() }
 
         btnLogout.setOnClickListener { logout() }
+
+        cardSettlement.setOnClickListener {
+            startActivity(Intent(this, SettlementsActivity::class.java))
+        }
     }
 
     private fun loadProfile() {
@@ -164,6 +188,43 @@ class ProfileActivity : AppCompatActivity() {
         val row = findViewById<View>(viewId) ?: return
         row.findViewById<TextView>(R.id.tvLabel)?.text = label
         row.findViewById<TextView>(R.id.tvValue)?.text = value
+    }
+
+    /**
+     * Load the user's groups and display them in the My Groups card.
+     * Matches the web Profile.jsx "My Groups" section.
+     */
+    private fun loadGroups() {
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.apiService.getGroups()
+                if (response.isSuccessful) {
+                    val groups = response.body()?.data ?: emptyList()
+                    displayGroups(groups)
+                }
+            } catch (_: Exception) {
+                // Silently fail — groups is a nice-to-have on the profile screen
+            }
+        }
+    }
+
+    private fun displayGroups(groups: List<Group>) {
+        tvGroupCount.text = groups.size.toString()
+        layoutGroupsList.removeAllViews()
+
+        if (groups.isEmpty()) {
+            tvNoGroups.visibility = View.VISIBLE
+            return
+        }
+        tvNoGroups.visibility = View.GONE
+
+        for (group in groups) {
+            val row = layoutInflater.inflate(R.layout.item_group_profile, layoutGroupsList, false)
+            row.findViewById<TextView>(R.id.tvGroupName).text = group.name ?: "Group"
+            val memberCount = group.members?.size ?: 0
+            row.findViewById<TextView>(R.id.tvMemberCount).text = "$memberCount member${if (memberCount != 1) "s" else ""}"
+            layoutGroupsList.addView(row)
+        }
     }
 
     private fun enterEditMode() {
