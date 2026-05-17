@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Bottom nav icon/text colors on dark background.
-     Active: warm gold (#C49A3C), Inactive: muted gray (#64748b) -->
+<!-- Bottom nav icon/text colors.
+     Active: white, Inactive: white at 60% opacity -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:color="#C49A3C" android:state_checked="true" />
-    <item android:color="#64748b" />
+    <item android:color="#FFFFFF" android:state_checked="true" />
+    <item android:color="#99FFFFFF" />
 </selector>

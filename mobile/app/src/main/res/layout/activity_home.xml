@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background">
+    android:background="#FDFAF4">
 
     <!-- Scrollable Content -->
     <ScrollView
@@ -354,7 +354,7 @@
         android:layout_height="1dp"
         android:background="#2a2a3e" />
 
-    <!-- Bottom Navigation (dark theme matching web sidebar) -->
+
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNav"
         android:layout_width="match_parent"
