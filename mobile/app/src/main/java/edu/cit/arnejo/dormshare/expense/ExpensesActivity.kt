@@ -181,34 +181,68 @@ class ExpensesActivity : AppCompatActivity() {
                         return@addOnSuccessListener
                     }
 
-                    // Parse receipt — improved: prioritize TOTAL line over largest amount
+                    // Parse receipt — multi-strategy TOTAL detection
                     val lines = fullText.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
                     val moneyRegex = Regex("""(\d+[.,]\d{2})""")
 
                     var detectedAmount = ""
 
-                    // 1st priority: find a line with TOTAL/SUBTOTAL/AMOUNT DUE and extract its amount
-                    val totalKeywords = listOf("total", "subtotal", "amount due", "grand total", "net amount")
-                    val cashKeywords = listOf("cash", "change", "tendered", "payment")
-                    for (line in lines) {
-                        val lower = line.lowercase()
-                        // Skip lines about cash/change — we want the bill total, not what was paid
-                        if (cashKeywords.any { lower.contains(it) }) continue
-                        if (totalKeywords.any { lower.contains(it) }) {
-                            val match = moneyRegex.find(line)
-                            if (match != null) {
-                                detectedAmount = match.groupValues[1].replace(",", ".")
-                                break
+                    // Strategy 1: Search raw text for "TOTAL" followed by amount
+                    // This handles cases where ML Kit keeps them on the same line
+                    val totalPatterns = listOf(
+                        Regex("""(?i)\btotal\b[^0-9]*(\d+[.,]\d{2})"""),
+                        Regex("""(?i)\bsubtotal\b[^0-9]*(\d+[.,]\d{2})"""),
+                        Regex("""(?i)\bamount\s+due\b[^0-9]*(\d+[.,]\d{2})"""),
+                        Regex("""(?i)\bgrand\s+total\b[^0-9]*(\d+[.,]\d{2})""")
+                    )
+                    for (pattern in totalPatterns) {
+                        val match = pattern.find(fullText)
+                        if (match != null) {
+                            detectedAmount = match.groupValues[1].replace(",", ".")
+                            break
+                        }
+                    }
+
+                    // Strategy 2: per-line search (skip cash/change/vat lines)
+                    if (detectedAmount.isEmpty()) {
+                        val totalKeywords = listOf("total", "subtotal", "amount due")
+                        val skipKeywords = listOf("cash", "change", "tendered", "payment", "vat", "exempt", "zero rated", "net", "gross")
+                        for (line in lines) {
+                            val lower = line.lowercase()
+                            if (skipKeywords.any { lower.contains(it) }) continue
+                            if (totalKeywords.any { lower.contains(it) }) {
+                                val match = moneyRegex.find(line)
+                                if (match != null) {
+                                    detectedAmount = match.groupValues[1].replace(",", ".")
+                                    break
+                                }
                             }
                         }
                     }
 
-                    // 2nd priority: if no TOTAL found, use largest amount (excluding cash/change lines)
+                    // Strategy 3: Use ML Kit text blocks — find block containing "TOTAL"
                     if (detectedAmount.isEmpty()) {
+                        for (block in visionText.textBlocks) {
+                            val blockText = block.text
+                            if (blockText.lowercase().contains("total") &&
+                                !blockText.lowercase().contains("cash") &&
+                                !blockText.lowercase().contains("change")) {
+                                val match = moneyRegex.find(blockText)
+                                if (match != null) {
+                                    detectedAmount = match.groupValues[1].replace(",", ".")
+                                    break
+                                }
+                            }
+                        }
+                    }
+
+                    // Fallback: largest amount, excluding cash/change/vat lines
+                    if (detectedAmount.isEmpty()) {
+                        val skipKeywords = listOf("cash", "change", "tendered", "vat", "exempt", "net", "gross")
                         val allAmounts = mutableListOf<Double>()
                         for (line in lines) {
                             val lower = line.lowercase()
-                            if (cashKeywords.any { lower.contains(it) }) continue
+                            if (skipKeywords.any { lower.contains(it) }) continue
                             moneyRegex.findAll(line).forEach { m ->
                                 m.groupValues[1].replace(",", ".").toDoubleOrNull()?.let { allAmounts.add(it) }
                             }
