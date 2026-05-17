@@ -348,12 +348,18 @@
 
     </ScrollView>
 
-    <!-- Bottom Navigation -->
+    <!-- Bottom Navigation Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#2a2a3e" />
+
+    <!-- Bottom Navigation (dark theme matching web sidebar) -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNav"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/card_background"
+        android:background="#1a1a2e"
         app:menu="@menu/bottom_nav_menu"
         app:labelVisibilityMode="labeled"
         app:itemIconTint="@color/bottom_nav_color"
