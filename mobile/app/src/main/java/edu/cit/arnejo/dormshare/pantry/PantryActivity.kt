@@ -1,11 +1,8 @@
 package edu.cit.arnejo.dormshare.pantry
 
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.View
 import android.widget.ArrayAdapter
-import android.widget.EditText
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -17,8 +14,6 @@ import edu.cit.arnejo.dormshare.R
 import edu.cit.arnejo.dormshare.databinding.ActivityPantryBinding
 import edu.cit.arnejo.dormshare.shared.api.RetrofitClient
 import edu.cit.arnejo.dormshare.shared.auth.SessionManager
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -33,7 +28,6 @@ class PantryActivity : AppCompatActivity() {
     private var groupId: Long? = null
     private var allItems: List<PantryItem> = emptyList()
     private var currentFilter: String? = null
-    private var searchJob: Job? = null
 
     companion object {
         val CATEGORIES = listOf(
@@ -67,33 +61,6 @@ class PantryActivity : AppCompatActivity() {
         binding.filterLowStock.setOnClickListener { applyFilter("low_stock") }
         binding.filterOutOfStock.setOnClickListener { applyFilter("out_of_stock") }
 
-        // Search bar (if present in layout)
-        try {
-            val etSearch = findViewById<EditText>(R.id.etSearch)
-            etSearch?.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-                override fun afterTextChanged(s: Editable?) {
-                    val query = s.toString().trim()
-                    searchJob?.cancel()
-                    if (query.isEmpty()) {
-                        applyFilter(currentFilter)
-                    } else {
-                        searchJob = lifecycleScope.launch {
-                            delay(300) // debounce
-                            searchItems(query)
-                        }
-                    }
-                }
-            })
-        } catch (_: Exception) {}
-
-        // SwipeRefresh if present
-        try {
-            binding.swipeRefreshPantry.setOnRefreshListener { loadPantryItems() }
-            binding.swipeRefreshPantry.setColorSchemeColors(0xFFC49A3C.toInt())
-        } catch (_: Exception) {}
-
         loadPantryItems()
     }
 
@@ -108,8 +75,6 @@ class PantryActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 Toast.makeText(this@PantryActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-            } finally {
-                try { binding.swipeRefreshPantry.isRefreshing = false } catch (_: Exception) {}
             }
         }
     }
@@ -123,19 +88,6 @@ class PantryActivity : AppCompatActivity() {
         }
         adapter.update(filtered)
         binding.tvEmptyPantry.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
-    }
-
-    private fun searchItems(query: String) {
-        lifecycleScope.launch {
-            try {
-                val response = RetrofitClient.apiService.searchPantryItems(query, groupId)
-                if (response.isSuccessful) {
-                    val results = response.body()?.data ?: emptyList()
-                    adapter.update(results)
-                    binding.tvEmptyPantry.visibility = if (results.isEmpty()) View.VISIBLE else View.GONE
-                }
-            } catch (_: Exception) {}
-        }
     }
 
     private fun updateSummary(items: List<PantryItem>) {
