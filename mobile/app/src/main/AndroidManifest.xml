@@ -30,12 +30,16 @@
         <!-- Registration Screen -->
         <activity android:name=".auth.RegisterActivity" />
 
-        <!-- Home Screen (After Login) -->
+        <!-- Main Feature Screens -->
         <activity android:name=".home.HomeActivity" />
         <activity android:name=".expense.ExpensesActivity" />
         <activity android:name=".group.GroupsActivity" />
         <activity android:name=".settlement.SettlementsActivity" />
         <activity android:name=".pantry.PantryActivity" />
+
+        <!-- NEW: Profile & Notifications -->
+        <activity android:name=".profile.ProfileActivity" />
+        <activity android:name=".notification.NotificationsActivity" />
 
     </application>
 </manifest>

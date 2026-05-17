@@ -11,9 +11,11 @@ data class Group(
 )
 
 data class GroupMember(
-    val id: Long,
+    val id: Long = 0,
+    val userId: Long = 0,
     val name: String,
     val email: String,
+    val role: String? = null,
     val isAdmin: Boolean = false,
     val isCurrentUser: Boolean = false
 )

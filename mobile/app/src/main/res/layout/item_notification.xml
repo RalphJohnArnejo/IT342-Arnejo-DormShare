@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardBackgroundColor="#16213e"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="0dp"
+    android:layout_marginBottom="8dp">
+
+    <LinearLayout
+        android:id="@+id/notificationRoot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- Unread dot -->
+            <View
+                android:id="@+id/viewUnreadDot"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/bg_avatar_circle"
+                android:layout_marginEnd="10dp"
+                android:visibility="visible" />
+
+            <TextView
+                android:id="@+id/tvNotificationTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="#e2e8f0"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvNotificationTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#94a3b8"
+                android:textSize="11sp"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvNotificationBody"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#94a3b8"
+            android:textSize="13sp"
+            android:layout_marginTop="6dp"
+            android:layout_marginStart="18dp" />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

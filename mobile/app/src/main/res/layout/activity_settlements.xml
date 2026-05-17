@@ -3,37 +3,82 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="#1a1a2e">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <TextView
+        <!-- Header -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Settlements"
-            android:textSize="20sp"
-            android:padding="16dp"
-            android:textStyle="bold" />
+            android:orientation="vertical"
+            android:padding="16dp">
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Settlements"
+                android:textColor="#c49a3c"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvSettlementHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Your Pending Payments"
+                android:textColor="#94a3b8"
+                android:textSize="13sp"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <!-- Group Selector -->
+        <Spinner
+            android:id="@+id/spinnerGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/bg_card_dark_rounded"
+            android:padding="12dp"
+            android:visibility="gone" />
+
+        <!-- Tabs: You Owe | You Receive | History -->
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:tabMode="fixed"
+            app:tabGravity="fill"
+            app:tabTextColor="#94a3b8"
+            app:tabSelectedTextColor="#c49a3c"
+            app:tabIndicatorColor="#c49a3c"
+            android:layout_marginHorizontal="16dp"
+            android:background="@drawable/bg_card_dark_rounded" />
+
+        <!-- List -->
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swipeRefreshSettlements"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1">
+            android:layout_weight="1"
+            android:layout_marginTop="8dp">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvSettlements"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="12dp" />
+                android:padding="12dp"
+                android:clipToPadding="false" />
 
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     </LinearLayout>
 
+    <!-- Empty state -->
     <TextView
         android:id="@+id/tvEmptySettlements"
         android:layout_width="wrap_content"
@@ -41,7 +86,8 @@
         android:layout_gravity="center"
         android:text="No settlements found."
         android:textAlignment="center"
-        android:textSize="16sp"
+        android:textColor="#94a3b8"
+        android:textSize="15sp"
         android:visibility="gone" />
 
 </FrameLayout>

@@ -1,6 +1,7 @@
 package edu.cit.arnejo.dormshare.shared.api
 
 import android.content.Context
+import android.content.Intent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import okhttp3.Interceptor
@@ -29,7 +30,8 @@ object RetrofitClient {
 
     /**
      * Must be called once (e.g. from Application.onCreate or LoginActivity) so the
-     * auth interceptor can fall back to reading the persisted token from SharedPreferences.
+     * auth interceptor can read the persisted JWT from SharedPreferences
+     * even after process death / recreation.
      */
     fun init(context: Context) {
         appContext = context.applicationContext
@@ -39,6 +41,7 @@ object RetrofitClient {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
+    /** Attaches the JWT Bearer token to every outgoing request. */
     private val authInterceptor = Interceptor { chain ->
         val original: Request = chain.request()
         val builder = original.newBuilder()
@@ -58,9 +61,40 @@ object RetrofitClient {
         chain.proceed(builder.build())
     }
 
+    /**
+     * Handles 401 Unauthorized responses globally.
+     * Clears the persisted session and redirects to LoginActivity,
+     * mirroring the web app's axios 401 interceptor.
+     */
+    private val unauthorizedInterceptor = Interceptor { chain ->
+        val response = chain.proceed(chain.request())
+
+        if (response.code == 401) {
+            appContext?.let { ctx ->
+                SessionManager.clearSession(ctx)
+                TokenProvider.token = null
+
+                // Launch LoginActivity and clear the back-stack
+                try {
+                    val loginClass = Class.forName("edu.cit.arnejo.dormshare.auth.LoginActivity")
+                    val intent = Intent(ctx, loginClass).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                                Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
+                    ctx.startActivity(intent)
+                } catch (_: ClassNotFoundException) {
+                    // Fallback: just clear session, activity will handle redirect
+                }
+            }
+        }
+
+        response
+    }
+
     private val httpClient = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
         .addInterceptor(authInterceptor)
+        .addInterceptor(unauthorizedInterceptor)
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)

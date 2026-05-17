@@ -17,7 +17,7 @@
         android:icon="@android:drawable/ic_menu_edit"
         android:title="Expenses" />
     <item
-        android:id="@+id/nav_settlements"
-        android:icon="@android:drawable/ic_menu_send"
-        android:title="Settlement" />
+        android:id="@+id/nav_profile"
+        android:icon="@android:drawable/ic_menu_manage"
+        android:title="Profile" />
 </menu>
