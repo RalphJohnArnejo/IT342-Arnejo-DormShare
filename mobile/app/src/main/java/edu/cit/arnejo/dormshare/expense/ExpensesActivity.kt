@@ -302,9 +302,77 @@ class ExpensesActivity : AppCompatActivity() {
         categoryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerCategory.adapter = categoryAdapter
 
+        // Split type toggle
+        val toggleSplitType = dialogView.findViewById<com.google.android.material.button.MaterialButtonToggleGroup>(R.id.toggleSplitType)
+        val layoutCustomSplits = dialogView.findViewById<LinearLayout>(R.id.layoutCustomSplits)
+        var isCustomSplit = false
+        val customAmountInputs = mutableMapOf<Long, TextInputEditText>()
+
         // Setup roommate chips
         val selectedRoommates = mutableSetOf<Long>()
         chipGroupMembers.removeAllViews()
+
+        // Helper: rebuild custom split inputs
+        fun rebuildCustomInputs() {
+            layoutCustomSplits.removeAllViews()
+            customAmountInputs.clear()
+            for (rid in selectedRoommates) {
+                val member = groupMembers.find { it.userId == rid } ?: continue
+                val row = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                    setPadding(0, 4, 0, 4)
+                }
+                val label = android.widget.TextView(this).apply {
+                    text = member.name
+                    textSize = 14f
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                }
+                val input = TextInputEditText(this).apply {
+                    hint = "₱ Amount"
+                    inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+                    textSize = 14f
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                }
+                customAmountInputs[rid] = input
+                row.addView(label)
+                row.addView(input)
+                layoutCustomSplits.addView(row)
+            }
+        }
+
+        // Helper: update split preview
+        fun updatePreview() {
+            val amount = etAmount.text.toString().toDoubleOrNull() ?: 0.0
+            if (selectedRoommates.isEmpty() || amount <= 0) {
+                tvSplitPreview.visibility = View.GONE
+                return
+            }
+            if (isCustomSplit) {
+                val sumOthers = customAmountInputs.values.sumOf {
+                    it.text.toString().toDoubleOrNull() ?: 0.0
+                }
+                val yourShare = amount - sumOthers
+                tvSplitPreview.text = "Your share: ₱%.2f".format(yourShare)
+                tvSplitPreview.visibility = View.VISIBLE
+            } else {
+                val share = amount / (selectedRoommates.size + 1)
+                tvSplitPreview.text = "Each pays: ₱%.2f (split %d ways)".format(
+                    share, selectedRoommates.size + 1
+                )
+                tvSplitPreview.visibility = View.VISIBLE
+            }
+        }
+
+        // Toggle listener
+        toggleSplitType.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                isCustomSplit = (checkedId == R.id.btnSplitCustom)
+                layoutCustomSplits.visibility = if (isCustomSplit) View.VISIBLE else View.GONE
+                if (isCustomSplit) rebuildCustomInputs()
+                updatePreview()
+            }
+        }
 
         if (groupMembers.isEmpty()) {
             val noMembersChip = Chip(this).apply {
@@ -322,18 +390,8 @@ class ExpensesActivity : AppCompatActivity() {
                     setOnCheckedChangeListener { _, isChecked ->
                         if (isChecked) selectedRoommates.add(member.userId)
                         else selectedRoommates.remove(member.userId)
-
-                        // Update split preview
-                        val amount = etAmount.text.toString().toDoubleOrNull() ?: 0.0
-                        if (selectedRoommates.isNotEmpty() && amount > 0) {
-                            val share = amount / (selectedRoommates.size + 1)
-                            tvSplitPreview.text = "Each pays: ₱%.2f (split %d ways)".format(
-                                share, selectedRoommates.size + 1
-                            )
-                            tvSplitPreview.visibility = View.VISIBLE
-                        } else {
-                            tvSplitPreview.visibility = View.GONE
-                        }
+                        if (isCustomSplit) rebuildCustomInputs()
+                        updatePreview()
                     }
                 }
                 chipGroupMembers.addView(chip)
@@ -345,16 +403,7 @@ class ExpensesActivity : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: android.text.Editable?) {
-                val amount = s.toString().toDoubleOrNull() ?: 0.0
-                if (selectedRoommates.isNotEmpty() && amount > 0) {
-                    val share = amount / (selectedRoommates.size + 1)
-                    tvSplitPreview.text = "Each pays: ₱%.2f (split %d ways)".format(
-                        share, selectedRoommates.size + 1
-                    )
-                    tvSplitPreview.visibility = View.VISIBLE
-                } else {
-                    tvSplitPreview.visibility = View.GONE
-                }
+                updatePreview()
             }
         })
 
@@ -376,24 +425,65 @@ class ExpensesActivity : AppCompatActivity() {
                     return@setPositiveButton
                 }
 
-                addExpense(desc, amount, category, selectedRoommates.toList())
+                if (isCustomSplit) {
+                    addExpenseCustom(desc, amount, category, customAmountInputs)
+                } else {
+                    addExpenseEqual(desc, amount, category, selectedRoommates.toList())
+                }
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
-    private fun addExpense(description: String, amount: Double, category: String, roommateIds: List<Long>) {
+    /**
+     * Equal split — each person (including self) pays the same share.
+     */
+    private fun addExpenseEqual(description: String, amount: Double, category: String, roommateIds: List<Long>) {
         val currentUserId = SessionManager.getUserId(this)
         val share = amount / (roommateIds.size + 1) // +1 for self
 
         val splits = mutableListOf<SplitEntry>()
-        // Self split
         splits.add(SplitEntry(userId = currentUserId, amount = share))
-        // Roommate splits
         roommateIds.forEach { rid ->
             splits.add(SplitEntry(userId = rid, amount = share))
         }
 
+        submitExpense(description, amount, category, splits)
+    }
+
+    /**
+     * Custom split — each roommate has a specified amount, payer gets the remainder.
+     * Matches web Expenses.jsx custom split logic.
+     */
+    private fun addExpenseCustom(
+        description: String, amount: Double, category: String,
+        customInputs: Map<Long, TextInputEditText>
+    ) {
+        val currentUserId = SessionManager.getUserId(this)
+        val splits = mutableListOf<SplitEntry>()
+        var sumOthers = 0.0
+
+        for ((userId, input) in customInputs) {
+            val amt = input.text.toString().toDoubleOrNull() ?: 0.0
+            if (amt > 0) {
+                splits.add(SplitEntry(userId = userId, amount = amt))
+                sumOthers += amt
+            }
+        }
+
+        if (sumOthers > amount) {
+            Toast.makeText(this, "Custom splits exceed total amount", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Payer's share is the remainder
+        val payerShare = amount - sumOthers
+        splits.add(SplitEntry(userId = currentUserId, amount = payerShare))
+
+        submitExpense(description, amount, category, splits)
+    }
+
+    private fun submitExpense(description: String, amount: Double, category: String, splits: List<SplitEntry>) {
         val request = ExpenseRequest(
             amount = amount,
             description = description,
