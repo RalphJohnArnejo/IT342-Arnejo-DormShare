@@ -181,80 +181,93 @@ class ExpensesActivity : AppCompatActivity() {
                         return@addOnSuccessListener
                     }
 
-                    // Parse receipt — multi-strategy TOTAL detection
+                    // Parse receipt using ML Kit spatial analysis
+                    // ML Kit puts labels (left column) and amounts (right column)
+                    // in SEPARATE text blocks. We use bounding box Y-coordinates
+                    // to match "TOTAL" with its corresponding amount.
                     val lines = fullText.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
                     val moneyRegex = Regex("""(\d+[.,]\d{2})""")
 
                     var detectedAmount = ""
 
-                    // Strategy 1: Search raw text for "TOTAL" followed by amount
-                    // Use [\s\S]*? to match across newlines (ML Kit often splits them)
-                    // Non-greedy ensures we get the FIRST amount right after TOTAL
-                    android.util.Log.d("OCR_DEBUG", "Raw text:\n$fullText")
+                    // Step 1: Collect ALL amounts with their Y-positions from ML Kit blocks
+                    data class AmountWithPosition(val amount: String, val centerY: Int, val centerX: Int)
+                    val allAmountsWithPos = mutableListOf<AmountWithPosition>()
 
-                    val totalPatterns = listOf(
-                        Regex("""(?i)\btotal\b[\s\S]*?(\d+[.,]\d{2})"""),
-                        Regex("""(?i)\bsubtotal\b[\s\S]*?(\d+[.,]\d{2})"""),
-                        Regex("""(?i)\bamount\s+due\b[\s\S]*?(\d+[.,]\d{2})"""),
-                        Regex("""(?i)\bgrand\s+total\b[\s\S]*?(\d+[.,]\d{2})""")
-                    )
-                    for (pattern in totalPatterns) {
-                        val match = pattern.find(fullText)
-                        if (match != null) {
-                            val captured = match.groupValues[1].replace(",", ".")
-                            android.util.Log.d("OCR_DEBUG", "Strategy 1 matched: '${match.value}' → amount=$captured")
-                            detectedAmount = captured
-                            break
-                        }
-                    }
+                    // Step 2: Find the "TOTAL" line's Y-position
+                    var totalCenterY = -1
+                    var totalCenterX = -1
 
-                    // Strategy 2: per-line search (skip cash/change/vat lines)
-                    if (detectedAmount.isEmpty()) {
-                        val totalKeywords = listOf("total", "subtotal", "amount due")
-                        val skipKeywords = listOf("cash", "change", "tendered", "payment", "vat", "exempt", "zero rated", "net", "gross")
-                        for (line in lines) {
-                            val lower = line.lowercase()
-                            if (skipKeywords.any { lower.contains(it) }) continue
-                            if (totalKeywords.any { lower.contains(it) }) {
-                                val match = moneyRegex.find(line)
-                                if (match != null) {
-                                    detectedAmount = match.groupValues[1].replace(",", ".")
-                                    break
+                    for (block in visionText.textBlocks) {
+                        for (line in block.lines) {
+                            val lineText = line.text.trim()
+                            val box = line.boundingBox ?: continue
+
+                            // Check if this line contains "TOTAL" (but not SUBTOTAL, VATABLE, etc.)
+                            val lower = lineText.lowercase()
+                            if (lower == "total" || lower.startsWith("total ") || lower.endsWith(" total")) {
+                                if (!lower.contains("sub") && !lower.contains("vat") && !lower.contains("item")) {
+                                    totalCenterY = box.centerY()
+                                    totalCenterX = box.centerX()
+                                    android.util.Log.d("OCR_DEBUG", "Found TOTAL at Y=$totalCenterY, X=$totalCenterX: '$lineText'")
+
+                                    // Check if amount is on the same line
+                                    val match = moneyRegex.find(lineText)
+                                    if (match != null) {
+                                        val amt = match.groupValues[1].replace(",", ".")
+                                        if (amt.toDoubleOrNull() ?: 0.0 > 0) {
+                                            detectedAmount = amt
+                                            android.util.Log.d("OCR_DEBUG", "Amount on same line as TOTAL: $amt")
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Collect all amounts with positions
+                            val match = moneyRegex.find(lineText)
+                            if (match != null) {
+                                val amt = match.groupValues[1].replace(",", ".")
+                                if (amt.toDoubleOrNull() ?: 0.0 > 0) {
+                                    allAmountsWithPos.add(AmountWithPosition(amt, box.centerY(), box.centerX()))
                                 }
                             }
                         }
                     }
 
-                    // Strategy 3: Use ML Kit text blocks — find block containing "TOTAL"
-                    if (detectedAmount.isEmpty()) {
-                        for (block in visionText.textBlocks) {
-                            val blockText = block.text
-                            if (blockText.lowercase().contains("total") &&
-                                !blockText.lowercase().contains("cash") &&
-                                !blockText.lowercase().contains("change")) {
-                                val match = moneyRegex.find(blockText)
-                                if (match != null) {
-                                    detectedAmount = match.groupValues[1].replace(",", ".")
-                                    break
-                                }
-                            }
+                    android.util.Log.d("OCR_DEBUG", "TOTAL Y=$totalCenterY, all amounts: $allAmountsWithPos")
+
+                    // Step 3: If TOTAL found but amount not on same line, find nearest amount at same Y
+                    if (detectedAmount.isEmpty() && totalCenterY > 0 && allAmountsWithPos.isNotEmpty()) {
+                        // Find amounts at similar Y position (within 40px) but to the RIGHT of TOTAL
+                        val candidates = allAmountsWithPos
+                            .filter { kotlin.math.abs(it.centerY - totalCenterY) < 40 && it.centerX > totalCenterX }
+                            .sortedBy { kotlin.math.abs(it.centerY - totalCenterY) }
+
+                        if (candidates.isNotEmpty()) {
+                            detectedAmount = candidates[0].amount
+                            android.util.Log.d("OCR_DEBUG", "Spatial match: TOTAL Y=$totalCenterY → amount=${candidates[0].amount} at Y=${candidates[0].centerY}")
                         }
                     }
 
-                    // Fallback: largest amount, excluding cash/change/vat lines
+                    // Step 4: Fallback — find the amount that appears most frequently (likely total + gross repeat)
                     if (detectedAmount.isEmpty()) {
-                        val skipKeywords = listOf("cash", "change", "tendered", "vat", "exempt", "net", "gross")
-                        val allAmounts = mutableListOf<Double>()
-                        for (line in lines) {
-                            val lower = line.lowercase()
-                            if (skipKeywords.any { lower.contains(it) }) continue
-                            moneyRegex.findAll(line).forEach { m ->
-                                m.groupValues[1].replace(",", ".").toDoubleOrNull()?.let { allAmounts.add(it) }
-                            }
+                        val amountCounts = mutableMapOf<String, Int>()
+                        for (a in allAmountsWithPos) {
+                            amountCounts[a.amount] = (amountCounts[a.amount] ?: 0) + 1
                         }
-                        if (allAmounts.isNotEmpty()) {
-                            detectedAmount = "%.2f".format(allAmounts.max())
+                        // The total often appears twice (TOTAL row + Gross column)
+                        val repeatedAmounts = amountCounts.filter { it.value >= 2 && it.key.toDoubleOrNull() ?: 0.0 > 1.0 }
+                        if (repeatedAmounts.isNotEmpty()) {
+                            detectedAmount = repeatedAmounts.maxByOrNull { it.key.toDoubleOrNull() ?: 0.0 }?.key ?: ""
+                            android.util.Log.d("OCR_DEBUG", "Frequency match: $detectedAmount (appears ${amountCounts[detectedAmount]} times)")
                         }
+                    }
+
+                    // Step 5: Final fallback — largest non-trivial amount
+                    if (detectedAmount.isEmpty() && allAmountsWithPos.isNotEmpty()) {
+                        detectedAmount = "%.2f".format(
+                            allAmountsWithPos.maxOfOrNull { it.amount.toDoubleOrNull() ?: 0.0 } ?: 0.0
+                        )
                     }
                     val detectedDescription = lines.firstOrNull() ?: ""
 
