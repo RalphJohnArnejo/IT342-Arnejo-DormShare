@@ -131,7 +131,7 @@ interface ApiService {
     suspend fun confirmStripePayment(@Body body: Map<String, Any>): Response<ApiResponse<Map<String, Any>>>
 
     @PATCH("api/expenses/settle/{splitId}")
-    suspend fun settleSplit(@Path("splitId") splitId: Long): Response<ApiResponse<Any>>
+    suspend fun settleSplit(@Path("splitId") splitId: Long): Response<ApiResponse<*>>
 
     // ==================== USER PROFILE ENDPOINTS ====================
 
