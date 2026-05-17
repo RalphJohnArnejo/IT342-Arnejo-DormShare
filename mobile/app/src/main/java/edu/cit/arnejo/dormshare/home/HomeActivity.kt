@@ -38,6 +38,12 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var tvRecentUpdates: TextView
     private lateinit var bottomNav: BottomNavigationView
 
+    // Pantry overview
+    private lateinit var tvPantryInStock: TextView
+    private lateinit var tvPantryLowStock: TextView
+    private lateinit var tvPantryOutOfStock: TextView
+    private lateinit var tvPantryTotalItems: TextView
+
     // Hidden fields for backward compatibility
     private lateinit var tvUserName: TextView
     private lateinit var tvUserEmail: TextView
@@ -88,6 +94,12 @@ class HomeActivity : AppCompatActivity() {
         tvUserName = findViewById(R.id.tvUserName)
         tvUserEmail = findViewById(R.id.tvUserEmail)
         tvUserRole = findViewById(R.id.tvUserRole)
+
+        // Pantry overview
+        tvPantryInStock = findViewById(R.id.tvPantryInStock)
+        tvPantryLowStock = findViewById(R.id.tvPantryLowStock)
+        tvPantryOutOfStock = findViewById(R.id.tvPantryOutOfStock)
+        tvPantryTotalItems = findViewById(R.id.tvPantryTotalItems)
     }
 
     private fun setupUserGreeting() {
@@ -107,6 +119,11 @@ class HomeActivity : AppCompatActivity() {
         // View all expenses link
         tvViewAllExpenses.setOnClickListener {
             navigateTo(ExpensesActivity::class.java)
+        }
+
+        // Pantry total items link opens pantry
+        tvPantryTotalItems.setOnClickListener {
+            navigateTo(PantryActivity::class.java)
         }
 
         // Recent updates section taps open notifications
@@ -202,6 +219,21 @@ class HomeActivity : AppCompatActivity() {
                     if (notifications.isNotEmpty()) {
                         tvRecentUpdates.text = notifications.first().title ?: "New activity"
                     }
+                }
+            } catch (_: Exception) { }
+
+            // Load pantry overview
+            try {
+                val pantryResponse = RetrofitClient.apiService.getPantryItems(groupId)
+                if (pantryResponse.isSuccessful) {
+                    val items = pantryResponse.body()?.data ?: emptyList()
+                    val inStock = items.count { it.status == "IN" }
+                    val lowStock = items.count { it.status == "LOW" }
+                    val outOfStock = items.count { it.status == "OUT" }
+                    tvPantryInStock.text = inStock.toString()
+                    tvPantryLowStock.text = lowStock.toString()
+                    tvPantryOutOfStock.text = outOfStock.toString()
+                    tvPantryTotalItems.text = "${items.size} total items → →"
                 }
             } catch (_: Exception) { }
         }
