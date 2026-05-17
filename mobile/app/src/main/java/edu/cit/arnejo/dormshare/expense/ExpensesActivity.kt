@@ -181,21 +181,42 @@ class ExpensesActivity : AppCompatActivity() {
                         return@addOnSuccessListener
                     }
 
-                    // Parse receipt — same logic as web Expenses.jsx
-                    val moneyRegex = Regex("""[₱P]?\s?(\d+[.,]\d{2})""")
-                    val matches = moneyRegex.findAll(fullText).toList()
+                    // Parse receipt — improved: prioritize TOTAL line over largest amount
+                    val lines = fullText.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+                    val moneyRegex = Regex("""(\d+[.,]\d{2})""")
 
                     var detectedAmount = ""
-                    if (matches.isNotEmpty()) {
-                        val amounts = matches.map {
-                            it.groupValues[1].replace(",", ".").toDoubleOrNull() ?: 0.0
+
+                    // 1st priority: find a line with TOTAL/SUBTOTAL/AMOUNT DUE and extract its amount
+                    val totalKeywords = listOf("total", "subtotal", "amount due", "grand total", "net amount")
+                    val cashKeywords = listOf("cash", "change", "tendered", "payment")
+                    for (line in lines) {
+                        val lower = line.lowercase()
+                        // Skip lines about cash/change — we want the bill total, not what was paid
+                        if (cashKeywords.any { lower.contains(it) }) continue
+                        if (totalKeywords.any { lower.contains(it) }) {
+                            val match = moneyRegex.find(line)
+                            if (match != null) {
+                                detectedAmount = match.groupValues[1].replace(",", ".")
+                                break
+                            }
                         }
-                        val maxAmount = amounts.maxOrNull() ?: 0.0
-                        detectedAmount = "%.2f".format(maxAmount)
                     }
 
-                    // Guess description from first non-empty line
-                    val lines = fullText.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+                    // 2nd priority: if no TOTAL found, use largest amount (excluding cash/change lines)
+                    if (detectedAmount.isEmpty()) {
+                        val allAmounts = mutableListOf<Double>()
+                        for (line in lines) {
+                            val lower = line.lowercase()
+                            if (cashKeywords.any { lower.contains(it) }) continue
+                            moneyRegex.findAll(line).forEach { m ->
+                                m.groupValues[1].replace(",", ".").toDoubleOrNull()?.let { allAmounts.add(it) }
+                            }
+                        }
+                        if (allAmounts.isNotEmpty()) {
+                            detectedAmount = "%.2f".format(allAmounts.max())
+                        }
+                    }
                     val detectedDescription = lines.firstOrNull() ?: ""
 
                     // Detect store/merchant name
