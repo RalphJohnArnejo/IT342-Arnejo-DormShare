@@ -12,10 +12,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
+import edu.cit.arnejo.dormshare.R
+import edu.cit.arnejo.dormshare.home.HomeActivity
 import edu.cit.arnejo.dormshare.shared.api.RetrofitClient
 import edu.cit.arnejo.dormshare.shared.auth.SessionManager
 import edu.cit.arnejo.dormshare.shared.auth.TokenProvider
-import edu.cit.arnejo.dormshare.auth.LoginRequest
 import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {

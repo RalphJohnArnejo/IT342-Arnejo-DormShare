@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.textfield.TextInputEditText
+import edu.cit.arnejo.dormshare.R
 import edu.cit.arnejo.dormshare.databinding.ActivityExpensesBinding
 import edu.cit.arnejo.dormshare.group.Group
 import edu.cit.arnejo.dormshare.group.GroupMember
@@ -71,7 +72,7 @@ class ExpensesActivity : AppCompatActivity() {
 
         // Settlements button (if the layout has one)
         try {
-            val btnSettlements = findViewById<View>(edu.cit.arnejo.dormshare.R.id.btnSettlements)
+            val btnSettlements = findViewById<View>(R.id.btnSettlements)
             btnSettlements?.setOnClickListener {
                 val intent = Intent(this, SettlementsActivity::class.java)
                 groupId?.let { intent.putExtra("groupId", it) }
@@ -149,23 +150,23 @@ class ExpensesActivity : AppCompatActivity() {
      */
     private fun showAddExpenseDialog() {
         val dialogView = layoutInflater.inflate(
-            edu.cit.arnejo.dormshare.R.layout.dialog_add_expense, null
+            R.layout.dialog_add_expense, null
         )
 
         val etDescription = dialogView.findViewById<TextInputEditText>(
-            edu.cit.arnejo.dormshare.R.id.etExpenseDescription
+            R.id.etExpenseDescription
         )
         val etAmount = dialogView.findViewById<TextInputEditText>(
-            edu.cit.arnejo.dormshare.R.id.etExpenseAmount
+            R.id.etExpenseAmount
         )
         val spinnerCategory = dialogView.findViewById<Spinner>(
-            edu.cit.arnejo.dormshare.R.id.spinnerCategory
+            R.id.spinnerCategory
         )
         val chipGroupMembers = dialogView.findViewById<ChipGroup>(
-            edu.cit.arnejo.dormshare.R.id.chipGroupMembers
+            R.id.chipGroupMembers
         )
         val tvSplitPreview = dialogView.findViewById<android.widget.TextView>(
-            edu.cit.arnejo.dormshare.R.id.tvSplitPreview
+            R.id.tvSplitPreview
         )
 
         // Setup category spinner

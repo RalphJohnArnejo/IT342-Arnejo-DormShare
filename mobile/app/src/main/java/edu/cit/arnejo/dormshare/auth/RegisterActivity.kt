@@ -11,8 +11,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
+import edu.cit.arnejo.dormshare.R
 import edu.cit.arnejo.dormshare.shared.api.RetrofitClient
-import edu.cit.arnejo.dormshare.auth.RegisterRequest
 import kotlinx.coroutines.launch
 
 class RegisterActivity : AppCompatActivity() {
