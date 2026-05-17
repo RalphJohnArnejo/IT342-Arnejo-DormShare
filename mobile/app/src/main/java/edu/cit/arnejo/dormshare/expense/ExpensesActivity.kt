@@ -70,16 +70,6 @@ class ExpensesActivity : AppCompatActivity() {
 
         binding.fabAddExpense.setOnClickListener { showAddExpenseDialog() }
 
-        // Settlements button (if the layout has one)
-        try {
-            val btnSettlements = findViewById<View>(R.id.btnSettlements)
-            btnSettlements?.setOnClickListener {
-                val intent = Intent(this, SettlementsActivity::class.java)
-                groupId?.let { intent.putExtra("groupId", it) }
-                startActivity(intent)
-            }
-        } catch (_: Exception) {}
-
         loadGroups()
     }
 
