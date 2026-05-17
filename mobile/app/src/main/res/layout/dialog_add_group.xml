@@ -11,7 +11,8 @@
         android:text="Create New Group"
         android:textSize="18sp"
         android:textStyle="bold"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="16dp"
+        android:textColor="#D3A540"/>
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
