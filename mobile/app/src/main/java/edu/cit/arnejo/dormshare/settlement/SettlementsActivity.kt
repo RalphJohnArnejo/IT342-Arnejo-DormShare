@@ -282,7 +282,8 @@ class SettlementsActivity : AppCompatActivity() {
                     return@launch
                 }
 
-                val intentData = intentResponse.body()?.data ?: emptyMap()
+                @Suppress("UNCHECKED_CAST")
+                val intentData = intentResponse.body()?.data as? Map<String, Any> ?: emptyMap()
                 val paymentIntentId = intentData["paymentIntentId"]?.toString() ?: ""
 
                 // Step 2: Confirm payment (sandbox auto-succeeds)
@@ -293,7 +294,9 @@ class SettlementsActivity : AppCompatActivity() {
                 val confirmResponse = RetrofitClient.apiService.confirmStripePayment(confirmBody)
 
                 if (confirmResponse.isSuccessful && confirmResponse.body()?.success == true) {
-                    val status = confirmResponse.body()?.data?.get("status")?.toString()
+                    @Suppress("UNCHECKED_CAST")
+                    val resultData = confirmResponse.body()?.data as? Map<String, Any> ?: emptyMap()
+                    val status = resultData["status"]?.toString()
                     if (status == "succeeded") {
                         showToast("\uD83D\uDCB3 Payment successful! Settlement recorded.")
                         dialog.dismiss()

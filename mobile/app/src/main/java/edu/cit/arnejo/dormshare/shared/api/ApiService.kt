@@ -125,10 +125,10 @@ interface ApiService {
     suspend fun initiatePayment(@Body body: Map<String, Any>): Response<ApiResponse<Any>>
 
     @POST("api/payments/stripe/intent")
-    suspend fun createStripeIntent(@Body body: Map<String, Any>): Response<ApiResponse<Map<String, Any>>>
+    suspend fun createStripeIntent(@Body body: Map<String, Any>): Response<ApiResponse<Any>>
 
     @POST("api/payments/stripe/confirm")
-    suspend fun confirmStripePayment(@Body body: Map<String, Any>): Response<ApiResponse<Map<String, Any>>>
+    suspend fun confirmStripePayment(@Body body: Map<String, Any>): Response<ApiResponse<Any>>
 
     // ==================== USER PROFILE ENDPOINTS ====================
 

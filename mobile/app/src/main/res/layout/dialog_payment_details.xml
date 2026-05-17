@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Payment Details dialog — matches web Settlement.jsx payment modal.
-     Shows paying to/amount header, Card Payment (Stripe) option, and Confirm button. -->
+     Uses dark text on white/light background for Material dialog compatibility. -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="#1a1a2e">
+    android:layout_height="wrap_content">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -32,7 +31,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Payment Details"
-                android:textColor="#e2e8f0"
+                android:textColor="#1a1a2e"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:layout_marginStart="10dp" />
@@ -43,7 +42,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="@drawable/bg_chip_gray"
+            android:background="@drawable/bg_card_outlined"
             android:padding="16dp"
             android:layout_marginBottom="20dp">
 
@@ -59,7 +58,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Paying to:"
-                    android:textColor="#94a3b8"
+                    android:textColor="#6B7280"
                     android:textSize="14sp" />
 
                 <TextView
@@ -82,14 +81,14 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Amount:"
-                    android:textColor="#94a3b8"
+                    android:textColor="#6B7280"
                     android:textSize="14sp" />
 
                 <TextView
                     android:id="@+id/tvPaymentAmount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="#e2e8f0"
+                    android:textColor="#1a1a2e"
                     android:textSize="14sp"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -102,7 +101,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:background="@drawable/bg_chip_gray"
+            android:background="@drawable/bg_card_outlined"
             android:padding="16dp"
             android:layout_marginBottom="12dp">
 
@@ -136,7 +135,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:background="@drawable/bg_chip_gray"
+            android:background="@drawable/bg_card_outlined"
             android:padding="16dp"
             android:layout_marginBottom="24dp">
 
@@ -157,7 +156,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Mark as Settled (Manual)"
-                android:textColor="#94a3b8"
+                android:textColor="#374151"
                 android:textSize="15sp"
                 android:layout_marginStart="8dp" />
         </LinearLayout>
@@ -181,7 +180,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Cancel"
-            android:textColor="#94a3b8"
+            android:textColor="#6B7280"
             android:layout_marginTop="4dp" />
 
     </LinearLayout>
