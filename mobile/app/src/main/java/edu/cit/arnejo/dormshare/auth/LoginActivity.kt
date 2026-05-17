@@ -185,8 +185,9 @@ class LoginActivity : AppCompatActivity() {
      * which is caught by OAuth2CallbackActivity.
      */
     private fun launchGoogleSignIn() {
-        // Use the same base URL as RetrofitClient (10.0.2.2 for emulator, LAN IP for device)
-        val baseUrl = "http://10.0.2.2:8080"
+        // Use localhost (requires: adb reverse tcp:8080 tcp:8080)
+        // Google OAuth2 only allows localhost redirect URIs for dev, not raw IPs
+        val baseUrl = "http://localhost:8080"
         val oauthUrl = "$baseUrl/auth/google-mobile"
 
         try {
