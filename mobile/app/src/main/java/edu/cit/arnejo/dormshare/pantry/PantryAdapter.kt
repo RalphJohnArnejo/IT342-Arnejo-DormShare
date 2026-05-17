@@ -27,34 +27,36 @@ class PantryAdapter(
         val binding = holder.binding
 
         binding.tvItemName.text = item.name
-        binding.tvQuantity.text = item.quantity.toString()
+        // Display quantity as integer if it's whole, otherwise with decimal
+        val qty = item.quantity
+        binding.tvQuantity.text = if (qty == qty.toLong().toDouble()) qty.toLong().toString() else qty.toString()
         binding.tvCategory.text = item.category
         binding.tvUpdatedBy.text = "Updated by ${item.updatedBy ?: "User"}"
         binding.tvUpdatedAt.text = item.updatedAt ?: "Just now"
 
-        // Status badge
+        // Status badge — backend uses IN/LOW/OUT
         when (item.status) {
-            "in_stock" -> {
+            "IN" -> {
                 binding.tvStatusBadge.text = "IN STOCK"
                 binding.tvStatusBadge.setBackgroundResource(R.drawable.bg_chip_green)
                 binding.tvStatusBadge.setTextColor(holder.itemView.context.getColor(R.color.green_success))
             }
-            "low_stock" -> {
+            "LOW" -> {
                 binding.tvStatusBadge.text = "LOW STOCK"
                 binding.tvStatusBadge.setBackgroundResource(R.drawable.bg_chip_amber)
                 binding.tvStatusBadge.setTextColor(holder.itemView.context.getColor(R.color.amber_warning))
             }
-            "out_of_stock" -> {
+            "OUT" -> {
                 binding.tvStatusBadge.text = "OUT OF STOCK"
                 binding.tvStatusBadge.setBackgroundResource(R.drawable.bg_chip_gray)
                 binding.tvStatusBadge.setTextColor(holder.itemView.context.getColor(R.color.red_error))
             }
         }
 
-        // Status buttons
-        binding.btnSetIn.setOnClickListener { onStatusChange?.invoke(item, "in_stock") }
-        binding.btnSetLow.setOnClickListener { onStatusChange?.invoke(item, "low_stock") }
-        binding.btnSetOut.setOnClickListener { onStatusChange?.invoke(item, "out_of_stock") }
+        // Status buttons — send backend-compatible values
+        binding.btnSetIn.setOnClickListener { onStatusChange?.invoke(item, "IN") }
+        binding.btnSetLow.setOnClickListener { onStatusChange?.invoke(item, "LOW") }
+        binding.btnSetOut.setOnClickListener { onStatusChange?.invoke(item, "OUT") }
 
         binding.btnEditItem.setOnClickListener { onEdit?.invoke(item) }
         binding.btnDeleteItem.setOnClickListener { onDelete?.invoke(item) }

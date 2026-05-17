@@ -57,9 +57,9 @@ class PantryActivity : AppCompatActivity() {
 
         // Filter chips
         binding.filterAll.setOnClickListener { applyFilter(null) }
-        binding.filterInStock.setOnClickListener { applyFilter("in_stock") }
-        binding.filterLowStock.setOnClickListener { applyFilter("low_stock") }
-        binding.filterOutOfStock.setOnClickListener { applyFilter("out_of_stock") }
+        binding.filterInStock.setOnClickListener { applyFilter("IN") }
+        binding.filterLowStock.setOnClickListener { applyFilter("LOW") }
+        binding.filterOutOfStock.setOnClickListener { applyFilter("OUT") }
 
         loadPantryItems()
     }
@@ -92,9 +92,9 @@ class PantryActivity : AppCompatActivity() {
 
     private fun updateSummary(items: List<PantryItem>) {
         binding.tvTotalItems.text = items.size.toString()
-        binding.tvInStock.text = items.count { it.status == "in_stock" }.toString()
-        binding.tvLowStock.text = items.count { it.status == "low_stock" }.toString()
-        binding.tvOutOfStock.text = items.count { it.status == "out_of_stock" }.toString()
+        binding.tvInStock.text = items.count { it.status == "IN" }.toString()
+        binding.tvLowStock.text = items.count { it.status == "LOW" }.toString()
+        binding.tvOutOfStock.text = items.count { it.status == "OUT" }.toString()
     }
 
     private fun showAddDialog() {
@@ -123,7 +123,7 @@ class PantryActivity : AppCompatActivity() {
     }
 
     private fun addItem(name: String, quantity: Int, category: String) {
-        val item = PantryItem(0, name, quantity, category, "in_stock", groupId, SessionManager.getUserName(this), null)
+        val item = PantryItem(0, name, quantity.toDouble(), category, "IN", groupId, SessionManager.getUserName(this), null)
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.apiService.createPantryItem(item, groupId)
@@ -144,7 +144,7 @@ class PantryActivity : AppCompatActivity() {
      * The old code called a non-existent updatePantryStatus endpoint.
      */
     private fun updateStatus(item: PantryItem, status: String) {
-        val updated = PantryItem(item.id, item.name, item.quantity, item.category, status, item.groupId, item.updatedBy, item.updatedAt)
+        val updated = PantryItem(item.id, item.name, item.quantity, item.category, status, item.groupId, SessionManager.getUserName(this), null)
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.apiService.updatePantryItem(item.id, updated)
@@ -192,7 +192,7 @@ class PantryActivity : AppCompatActivity() {
     }
 
     private fun updateItem(oldItem: PantryItem, name: String, quantity: Int, category: String) {
-        val updated = PantryItem(oldItem.id, name, quantity, category, oldItem.status, oldItem.groupId, SessionManager.getUserName(this), null)
+        val updated = PantryItem(oldItem.id, name, quantity.toDouble(), category, oldItem.status, oldItem.groupId, SessionManager.getUserName(this), null)
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.apiService.updatePantryItem(oldItem.id, updated)
