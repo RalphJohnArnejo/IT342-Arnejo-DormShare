@@ -200,6 +200,18 @@ public class StripeService {
                 return confirmMockPaymentIntent(paymentIntentId, paymentMethodId);
             }
 
+            // If mock mode is enabled but intent not in map (e.g. server restarted),
+            // treat any pi_ prefixed ID as a mock intent and auto-succeed
+            if (mockEnabled && paymentIntentId != null && paymentIntentId.startsWith("pi_")) {
+                logger.info("Mock mode: auto-succeeding unknown payment intent {}", paymentIntentId);
+                Map<String, Object> response = new HashMap<>();
+                response.put("paymentIntentId", paymentIntentId);
+                response.put("status", "succeeded");
+                response.put("mockMode", true);
+                response.put("message", "Mock payment auto-confirmed");
+                return response;
+            }
+
             PaymentIntentConfirmParams params = PaymentIntentConfirmParams.builder()
                     .setPaymentMethod(paymentMethodId)
                     .setReturnUrl("http://localhost:5173/settlement?status=confirmed")
@@ -219,6 +231,15 @@ public class StripeService {
 
         } catch (Exception e) {
             logger.error("Error confirming payment intent: {}", e.getMessage(), e);
+            // In mock mode, auto-succeed even on errors
+            if (mockEnabled) {
+                logger.info("Mock mode fallback: auto-succeeding payment {}", paymentIntentId);
+                Map<String, Object> response = new HashMap<>();
+                response.put("paymentIntentId", paymentIntentId);
+                response.put("status", "succeeded");
+                response.put("mockMode", true);
+                return response;
+            }
             throw new RuntimeException("Failed to confirm payment intent: " + e.getMessage());
         }
     }

@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#1a1a2e"
+    android:background="#FDFAF4"
     android:fillViewport="true">
 
     <LinearLayout
@@ -34,7 +34,7 @@
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="#16213e"
+            app:cardBackgroundColor="#212229"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             android:layout_marginBottom="16dp">
@@ -97,10 +97,10 @@
                             android:id="@+id/tvRoleBadge"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:background="@drawable/bg_chip_amber"
+                            android:background="#3D3830"
                             android:paddingHorizontal="12dp"
                             android:paddingVertical="4dp"
-                            android:textColor="#c49a3c"
+                            android:textColor="#B49D52"
                             android:textSize="11sp"
                             android:textStyle="bold" />
 
@@ -109,7 +109,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
-                            android:background="@drawable/bg_chip_gray"
+                            android:background="#363D47 "
                             android:paddingHorizontal="12dp"
                             android:paddingVertical="4dp"
                             android:textColor="#94a3b8"
@@ -123,7 +123,7 @@
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="#16213e"
+            app:cardBackgroundColor="#212229"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             android:layout_marginBottom="16dp">
@@ -264,7 +264,7 @@
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="#16213e"
+            app:cardBackgroundColor="#212229"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             android:layout_marginBottom="16dp">
@@ -414,7 +414,7 @@
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="#16213e"
+            app:cardBackgroundColor="#212229"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             android:layout_marginBottom="16dp">
@@ -447,8 +447,8 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:gravity="center"
-                        android:background="@drawable/bg_chip_amber"
-                        android:textColor="#c49a3c"
+                        android:background="#3D3830"
+                        android:textColor="#B49D52"
                         android:textSize="12sp"
                         android:textStyle="bold"
                         android:text="0" />
@@ -480,7 +480,7 @@
             android:id="@+id/cardSettlement"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="#16213e"
+            app:cardBackgroundColor="#212229"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             android:layout_marginBottom="16dp"
@@ -554,7 +554,8 @@
             app:icon="@android:drawable/ic_lock_lock"
             app:iconTint="#ef4444"
             android:layout_marginTop="8dp"
-            android:layout_marginBottom="24dp" />
+            android:layout_marginBottom="24dp"
+            />
 
         <ProgressBar
             android:id="@+id/progressBar"

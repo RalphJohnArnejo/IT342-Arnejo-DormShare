@@ -4,7 +4,8 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:background="#1E283A">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -31,7 +32,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Payment Details"
-                android:textColor="#1a1a2e"
+                android:textColor="#FFFFFF"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:layout_marginStart="10dp" />
@@ -42,7 +43,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="@drawable/bg_card_outlined"
+            android:background="#0F172A"
             android:padding="16dp"
             android:layout_marginBottom="20dp">
 
@@ -88,7 +89,7 @@
                     android:id="@+id/tvPaymentAmount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="#1a1a2e"
+                    android:textColor="#c49a3c"
                     android:textSize="14sp"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -101,7 +102,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:background="@drawable/bg_card_outlined"
+            android:background="#0F172A"
             android:padding="16dp"
             android:layout_marginBottom="12dp">
 
@@ -114,7 +115,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="💳"
+                android:text=""
                 android:textSize="16sp"
                 android:layout_marginStart="12dp" />
 
@@ -135,7 +136,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:background="@drawable/bg_card_outlined"
+            android:background="#0F172A"
             android:padding="16dp"
             android:layout_marginBottom="24dp">
 
@@ -148,7 +149,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="✅"
+                android:text=""
                 android:textSize="16sp"
                 android:layout_marginStart="12dp" />
 
@@ -156,9 +157,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Mark as Settled (Manual)"
-                android:textColor="#374151"
+                android:textColor="#c49a3c"
                 android:textSize="15sp"
-                android:layout_marginStart="8dp" />
+                android:layout_marginStart="8dp"
+                android:textStyle="bold"/>
         </LinearLayout>
 
         <!-- Confirm Payment Button -->
