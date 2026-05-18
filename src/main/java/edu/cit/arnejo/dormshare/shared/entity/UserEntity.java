@@ -29,7 +29,7 @@ public class UserEntity {
     @Column(nullable = false)
     private String role = "USER";
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "is_active", nullable = false, columnDefinition = "boolean default true")
     private Boolean isActive = true;
 
     @Column(name = "created_at", updatable = false)
