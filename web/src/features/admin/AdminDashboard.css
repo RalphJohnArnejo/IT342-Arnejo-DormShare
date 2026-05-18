@@ -17,12 +17,12 @@
 
 .admin-header h1 {
   font-size: 2rem;
-  color: #f1f5f9;
+  color: #000000;
   margin: 0 0 0.5rem 0;
 }
 
 .admin-subheader {
-  color: #94a3b8;
+  color: #c49a3c;
   margin: 0;
   font-size: 1rem;
 }
@@ -608,6 +608,7 @@
     transform: translateY(100px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
