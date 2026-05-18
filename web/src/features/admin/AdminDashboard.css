@@ -8,6 +8,13 @@
   margin-bottom: 2rem;
 }
 
+.admin-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
 .admin-header h1 {
   font-size: 2rem;
   color: #f1f5f9;
@@ -18,6 +25,33 @@
   color: #94a3b8;
   margin: 0;
   font-size: 1rem;
+}
+
+.btn-refresh {
+  padding: 0.75rem 1.25rem;
+  background: #1e293b;
+  color: #c49a3c;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  background: #334155;
+  border-color: #c49a3c;
+}
+
+.btn-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
 }
 
 /* Stats Grid */
@@ -42,12 +76,14 @@
 .stat-card:hover {
   border-color: #c49a3c;
   box-shadow: 0 4px 15px rgba(196, 154, 60, 0.1);
+  transform: translateY(-2px);
 }
 
 .stat-icon {
   font-size: 2.5rem;
   min-width: 60px;
   text-align: center;
+  color: #c49a3c;
 }
 
 .stat-content {
@@ -64,6 +100,13 @@
   color: #c49a3c;
   font-size: 1.8rem;
   font-weight: bold;
+}
+
+.stat-sub {
+  color: #ef4444;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  font-weight: 500;
 }
 
 /* Admin Tabs */
@@ -126,15 +169,35 @@
   min-width: 300px;
 }
 
+.search-wrapper,
+.filter-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-wrapper {
+  flex: 1;
+}
+
+.search-icon,
+.filter-icon-el {
+  position: absolute;
+  left: 0.75rem;
+  color: #64748b;
+  pointer-events: none;
+}
+
 .search-input,
 .filter-select {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 1rem 0.75rem 2.25rem;
   background: #0f172a;
   color: #f1f5f9;
   border: 1px solid #334155;
   border-radius: 8px;
   font-size: 0.95rem;
   transition: all 0.2s;
+  width: 100%;
 }
 
 .search-input:focus,
@@ -142,10 +205,6 @@
   outline: none;
   border-color: #c49a3c;
   box-shadow: 0 0 0 2px rgba(196, 154, 60, 0.1);
-}
-
-.search-input {
-  flex: 1;
 }
 
 /* Users Table */
@@ -174,6 +233,10 @@
   padding: 1rem;
   border-bottom: 1px solid #334155;
   color: #cbd5e1;
+}
+
+.users-table tr:hover {
+  background: rgba(196, 154, 60, 0.03);
 }
 
 .users-table tr.inactive-row {
@@ -211,7 +274,9 @@
 
 .role-badge,
 .status-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   padding: 0.35rem 0.8rem;
   border-radius: 20px;
   font-size: 0.75rem;
@@ -243,14 +308,22 @@
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .btn-action {
-  padding: 0.5rem 1rem;
+  padding: 0.45rem 0.85rem;
   border: none;
   border-radius: 6px;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .btn-deactivate {
@@ -275,9 +348,42 @@
   border-color: #16a34a66;
 }
 
+.btn-promote {
+  background: #c49a3c1a;
+  color: #c49a3c;
+  border: 1px solid rgba(196, 154, 60, 0.3);
+}
+
+.btn-promote:hover:not(:disabled) {
+  background: #c49a3c33;
+  border-color: #c49a3c66;
+}
+
+.btn-demote {
+  background: #f59e0b1a;
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.btn-demote:hover:not(:disabled) {
+  background: #f59e0b33;
+  border-color: #f59e0b66;
+}
+
 .btn-action:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.you-badge {
+  display: inline-block;
+  padding: 0.35rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #334155;
+  color: #94a3b8;
+  border: 1px solid #475569;
 }
 
 /* Groups Grid */
@@ -366,25 +472,51 @@
   border-radius: 8px;
   padding: 1rem;
   transition: all 0.2s;
+  border-left: 3px solid #334155;
 }
 
 .log-entry:hover {
   border-color: #c49a3c;
-  background: #1e293b;
+  background: rgba(30, 41, 59, 0.8);
 }
 
-.log-timestamp {
+.log-entry.log-warning {
+  border-left-color: #ef4444;
+}
+
+.log-entry.log-info {
+  border-left-color: #c49a3c;
+}
+
+.log-entry.log-default {
+  border-left-color: #16a34a;
+}
+
+.log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.log-action-badge {
+  background: #c49a3c1a;
   color: #c49a3c;
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   font-family: 'Courier New', monospace;
 }
 
-.log-action {
-  color: #f1f5f9;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
+.log-timestamp {
+  color: #64748b;
+  font-size: 0.8rem;
+  font-family: 'Courier New', monospace;
 }
 
 .log-details {
@@ -415,12 +547,11 @@
   padding: 0.75rem;
   background: #1e293b;
   border-radius: 4px;
-  border-left: 3px solid #c49a3c;
 }
 
 .empty-message {
   text-align: center;
-  padding: 2rem;
+  padding: 3rem 2rem;
   color: #94a3b8;
 }
 
@@ -456,6 +587,10 @@
   font-weight: 600;
   z-index: 1000;
   animation: slideUp 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .toast-success {
@@ -482,6 +617,10 @@
 @media (max-width: 768px) {
   .admin-container {
     padding: 1rem;
+  }
+
+  .admin-header-row {
+    flex-direction: column;
   }
 
   .stats-grid {
@@ -529,5 +668,9 @@
   .admin-tabs .tab {
     padding: 0.75rem 1rem;
     font-size: 0.9rem;
+  }
+
+  .action-buttons {
+    flex-direction: column;
   }
 }

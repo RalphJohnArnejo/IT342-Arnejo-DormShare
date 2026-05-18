@@ -279,6 +279,16 @@ export const reactivateUser = async (userId) => {
   return response.data;
 };
 
+export const promoteUser = async (userId) => {
+  const response = await api.patch(`/admin/users/${userId}/promote`);
+  return response.data;
+};
+
+export const demoteUser = async (userId) => {
+  const response = await api.patch(`/admin/users/${userId}/demote`);
+  return response.data;
+};
+
 export const getAllGroups = async () => {
   const response = await api.get('/admin/groups');
   return response.data;

@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import edu.cit.arnejo.dormshare.shared.dto.ApiResponse;
 import edu.cit.arnejo.dormshare.shared.entity.UserEntity;
-import edu.cit.arnejo.dormshare.admin.AdminService;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -65,7 +64,7 @@ public class AdminController {
         ResponseEntity<ApiResponse> adminCheck = requireAdmin(user);
         if (adminCheck != null) return adminCheck;
 
-        ApiResponse result = adminService.deactivateUser(userId);
+        ApiResponse result = adminService.deactivateUser(userId, user);
         return ResponseEntity.ok(result);
     }
 
@@ -80,7 +79,37 @@ public class AdminController {
         ResponseEntity<ApiResponse> adminCheck = requireAdmin(user);
         if (adminCheck != null) return adminCheck;
 
-        ApiResponse result = adminService.reactivateUser(userId);
+        ApiResponse result = adminService.reactivateUser(userId, user);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * PATCH /api/admin/users/{userId}/promote
+     * Promote a user to ADMIN role
+     */
+    @PatchMapping("/users/{userId}/promote")
+    public ResponseEntity<ApiResponse> promoteUser(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal UserEntity user) {
+        ResponseEntity<ApiResponse> adminCheck = requireAdmin(user);
+        if (adminCheck != null) return adminCheck;
+
+        ApiResponse result = adminService.promoteToAdmin(userId, user);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * PATCH /api/admin/users/{userId}/demote
+     * Demote an admin to USER role
+     */
+    @PatchMapping("/users/{userId}/demote")
+    public ResponseEntity<ApiResponse> demoteUser(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal UserEntity user) {
+        ResponseEntity<ApiResponse> adminCheck = requireAdmin(user);
+        if (adminCheck != null) return adminCheck;
+
+        ApiResponse result = adminService.demoteToUser(userId, user);
         return ResponseEntity.ok(result);
     }
 

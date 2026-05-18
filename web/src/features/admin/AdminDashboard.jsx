@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { Settings, Users, CheckCircle2, HardDrive, FileText, Check, X, Lock, Unlock } from 'lucide-react'
+import { Settings, Users, CheckCircle2, BarChart3, FileText, Check, X, Lock, Unlock, Shield, ShieldOff, RefreshCw, Search, Filter, Activity } from 'lucide-react'
 import {
   getAllUsers,
   deactivateUser,
   reactivateUser,
+  promoteUser,
+  demoteUser,
   getAllGroups,
   getSystemStats,
   getSystemLogs,
@@ -18,9 +20,10 @@ function AdminDashboard() {
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
-  const [deactivatingUserId, setDeactivatingUserId] = useState(null)
+  const [actionInProgress, setActionInProgress] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [userFilter, setUserFilter] = useState('all') // all, active, inactive
+  const [refreshing, setRefreshing] = useState(false)
 
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
@@ -49,16 +52,18 @@ function AdminDashboard() {
       ])
 
       if (usersRes.success) {
-        setUsers(usersRes.data || [])
+        // API returns data directly as array
+        setUsers(Array.isArray(usersRes.data) ? usersRes.data : (usersRes.data?.users || []))
       }
       if (groupsRes.success) {
-        setGroups(groupsRes.data || [])
+        setGroups(Array.isArray(groupsRes.data) ? groupsRes.data : (groupsRes.data?.groups || []))
       }
       if (statsRes.success) {
         setStats(statsRes.data || {})
       }
       if (logsRes.success) {
-        setLogs(logsRes.data || [])
+        const logData = logsRes.data
+        setLogs(Array.isArray(logData) ? logData : (logData?.logs || []))
       }
     } catch (err) {
       console.error('Admin data fetch error:', err)
@@ -68,13 +73,20 @@ function AdminDashboard() {
     }
   }
 
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await fetchAdminData()
+    setRefreshing(false)
+    showToast('Dashboard refreshed', 'success')
+  }
+
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
     setTimeout(() => setToast(null), 3000)
   }
 
   const handleDeactivateUser = async (userId, isActive) => {
-    setDeactivatingUserId(userId)
+    setActionInProgress(`deactivate-${userId}`)
     try {
       const res = isActive ? await deactivateUser(userId) : await reactivateUser(userId)
       if (res.success) {
@@ -84,20 +96,41 @@ function AdminDashboard() {
         )
         fetchAdminData()
       } else {
-        showToast('Failed to update user status', 'error')
+        showToast(res.message || 'Failed to update user status', 'error')
       }
     } catch (err) {
       console.error('Error updating user:', err)
-      showToast('Error updating user status', 'error')
+      showToast(err.response?.data?.message || 'Error updating user status', 'error')
     } finally {
-      setDeactivatingUserId(null)
+      setActionInProgress(null)
+    }
+  }
+
+  const handlePromoteDemote = async (userId, currentRole) => {
+    setActionInProgress(`role-${userId}`)
+    try {
+      const res = currentRole === 'ADMIN' ? await demoteUser(userId) : await promoteUser(userId)
+      if (res.success) {
+        showToast(
+          currentRole === 'ADMIN' ? 'User demoted to USER' : 'User promoted to ADMIN',
+          'success'
+        )
+        fetchAdminData()
+      } else {
+        showToast(res.message || 'Failed to update user role', 'error')
+      }
+    } catch (err) {
+      console.error('Error updating role:', err)
+      showToast(err.response?.data?.message || 'Error updating user role', 'error')
+    } finally {
+      setActionInProgress(null)
     }
   }
 
   const getFilteredUsers = () => {
     let filtered = users
     if (userFilter !== 'all') {
-      filtered = filtered.filter(u => 
+      filtered = filtered.filter(u =>
         userFilter === 'active' ? u.isActive : !u.isActive
       )
     }
@@ -127,12 +160,26 @@ function AdminDashboard() {
   return (
     <div className="admin-container">
       <div className="admin-header">
-        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Settings size={28} /> Admin Dashboard</h1>
-        <p className="admin-subheader">System management and oversight</p>
+        <div className="admin-header-row">
+          <div>
+            <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Settings size={28} /> Admin Dashboard</h1>
+            <p className="admin-subheader">System management and oversight</p>
+          </div>
+          <button
+            className="btn-refresh"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+          >
+            <RefreshCw size={18} className={refreshing ? 'spinning' : ''} />
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       {toast && (
         <div className={`toast toast-${toast.type}`}>
+          {toast.type === 'success' ? <Check size={18} /> : <X size={18} />}
           {toast.message}
         </div>
       )}
@@ -151,6 +198,9 @@ function AdminDashboard() {
           <div className="stat-content">
             <div className="stat-label">Active Users</div>
             <div className="stat-value">{stats.activeUsers || 0}</div>
+            {stats.inactiveUsers > 0 && (
+              <div className="stat-sub">{stats.inactiveUsers} inactive</div>
+            )}
           </div>
         </div>
         <div className="stat-card">
@@ -161,10 +211,10 @@ function AdminDashboard() {
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon"><HardDrive size={24} /></div>
+          <div className="stat-icon"><BarChart3 size={24} /></div>
           <div className="stat-content">
-            <div className="stat-label">Storage Used</div>
-            <div className="stat-value">{stats.storageUsedMB || 0} MB</div>
+            <div className="stat-label">Total Expenses</div>
+            <div className="stat-value">{stats.totalExpenses || 0}</div>
           </div>
         </div>
       </div>
@@ -190,7 +240,7 @@ function AdminDashboard() {
           onClick={() => setActiveTab('logs')}
           style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
         >
-          <FileText size={18} /> System Logs
+          <Activity size={18} /> Audit Logs ({logs.length})
         </button>
       </div>
 
@@ -200,27 +250,34 @@ function AdminDashboard() {
           <div className="section-header">
             <h2>User Management</h2>
             <div className="filter-controls">
-              <input
-                type="text"
-                placeholder="Search users..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
-              />
-              <select
-                value={userFilter}
-                onChange={(e) => setUserFilter(e.target.value)}
-                className="filter-select"
-              >
-                <option value="all">All Users</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
+              <div className="search-wrapper">
+                <Search size={16} className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input"
+                />
+              </div>
+              <div className="filter-wrapper">
+                <Filter size={16} className="filter-icon-el" />
+                <select
+                  value={userFilter}
+                  onChange={(e) => setUserFilter(e.target.value)}
+                  className="filter-select"
+                >
+                  <option value="all">All Users</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
             </div>
           </div>
 
           {filteredUsers.length === 0 ? (
             <div className="empty-message">
+              <Users size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
               <p>No users found</p>
             </div>
           ) : (
@@ -252,6 +309,7 @@ function AdminDashboard() {
                       </td>
                       <td>
                         <span className={`role-badge role-${u.role?.toLowerCase()}`}>
+                          {u.role === 'ADMIN' ? <Shield size={12} /> : null}
                           {u.role}
                         </span>
                       </td>
@@ -260,20 +318,58 @@ function AdminDashboard() {
                           {u.isActive ? <><Check size={14} /> Active</> : <><X size={14} /> Inactive</>}
                         </span>
                       </td>
-                      <td>{new Date(u.createdAt).toLocaleDateString()}</td>
+                      <td>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</td>
                       <td>
-                        <button
-                          className={`btn-action ${!u.isActive ? 'btn-reactivate' : 'btn-deactivate'}`}
-                          onClick={() => handleDeactivateUser(u.id, u.isActive)}
-                          disabled={deactivatingUserId === u.id}
-                          style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                        >
-                          {deactivatingUserId === u.id
-                            ? 'Processing...'
-                            : u.isActive
-                            ? <><Lock size={14} /> Deactivate</>
-                            : <><Unlock size={14} /> Reactivate</>}
-                        </button>
+                        <div className="action-buttons">
+                          {/* Deactivate / Reactivate */}
+                          {u.id !== user.userId && (
+                            <button
+                              className={`btn-action ${!u.isActive ? 'btn-reactivate' : 'btn-deactivate'}`}
+                              onClick={() => handleDeactivateUser(u.id, u.isActive)}
+                              disabled={actionInProgress === `deactivate-${u.id}`}
+                              title={u.isActive ? 'Deactivate user' : 'Reactivate user'}
+                              style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                            >
+                              {actionInProgress === `deactivate-${u.id}`
+                                ? 'Processing...'
+                                : u.isActive
+                                ? <><Lock size={14} /> Deactivate</>
+                                : <><Unlock size={14} /> Reactivate</>}
+                            </button>
+                          )}
+
+                          {/* Promote / Demote */}
+                          {u.id !== user.userId && u.role !== 'ADMIN' && (
+                            <button
+                              className="btn-action btn-promote"
+                              onClick={() => handlePromoteDemote(u.id, u.role)}
+                              disabled={actionInProgress === `role-${u.id}`}
+                              title="Promote to Admin"
+                              style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                            >
+                              {actionInProgress === `role-${u.id}`
+                                ? 'Processing...'
+                                : <><Shield size={14} /> Promote</>}
+                            </button>
+                          )}
+                          {u.id !== user.userId && u.role === 'ADMIN' && (
+                            <button
+                              className="btn-action btn-demote"
+                              onClick={() => handlePromoteDemote(u.id, u.role)}
+                              disabled={actionInProgress === `role-${u.id}`}
+                              title="Demote to User"
+                              style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                            >
+                              {actionInProgress === `role-${u.id}`
+                                ? 'Processing...'
+                                : <><ShieldOff size={14} /> Demote</>}
+                            </button>
+                          )}
+
+                          {u.id === user.userId && (
+                            <span className="you-badge">You</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -290,6 +386,7 @@ function AdminDashboard() {
           <h2>Group Oversight</h2>
           {groups.length === 0 ? (
             <div className="empty-message">
+              <Users size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
               <p>No groups found</p>
             </div>
           ) : (
@@ -302,16 +399,13 @@ function AdminDashboard() {
                   </div>
                   <div className="group-details">
                     <p>
-                      <strong>Created:</strong> {new Date(group.createdAt).toLocaleDateString()}
+                      <strong>Created:</strong> {group.createdAt ? new Date(group.createdAt).toLocaleDateString() : '—'}
                     </p>
                     <p>
                       <strong>Invite Code:</strong>
                       <code>{group.inviteCode}</code>
                     </p>
                   </div>
-                  {group.description && (
-                    <p className="group-description">{group.description}</p>
-                  )}
                 </div>
               ))}
             </div>
@@ -322,23 +416,31 @@ function AdminDashboard() {
       {/* Logs Tab */}
       {activeTab === 'logs' && (
         <div className="admin-section">
-          <h2>System Activity Logs</h2>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Activity size={22} /> Audit Logs
+          </h2>
           {logs.length === 0 ? (
             <div className="empty-message">
-              <p>No activity logs yet</p>
+              <FileText size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+              <p>No audit logs yet</p>
+              <p style={{ fontSize: '0.85rem', opacity: 0.6 }}>Admin actions will appear here</p>
             </div>
           ) : (
             <div className="logs-container">
               <div className="logs-list">
                 {logs.map((log, idx) => (
-                  <div key={idx} className="log-entry">
-                    <div className="log-timestamp">
-                      {new Date(log.timestamp).toLocaleString()}
+                  <div key={log.id || idx} className={`log-entry log-${log.action?.toLowerCase()?.includes('deactivat') ? 'warning' : log.action?.toLowerCase()?.includes('promot') ? 'info' : 'default'}`}>
+                    <div className="log-header">
+                      <div className="log-action-badge">
+                        {log.action?.replace(/_/g, ' ')}
+                      </div>
+                      <div className="log-timestamp">
+                        {log.timestamp ? new Date(log.timestamp).toLocaleString() : '—'}
+                      </div>
                     </div>
-                    <div className="log-action">{log.action}</div>
                     <div className="log-details">
-                      {log.user && <span>User: <strong>{log.user}</strong></span>}
-                      {log.resource && <span>Resource: <code>{log.resource}</code></span>}
+                      {log.user && <span>By: <strong>{log.user}</strong></span>}
+                      {log.targetType && <span>Target: <code>{log.targetType} #{log.targetId}</code></span>}
                     </div>
                     {log.details && (
                       <div className="log-description">{log.details}</div>

@@ -112,6 +112,11 @@ public class UserService {
             return AuthResponse.error("AUTH-001", "Invalid credentials", "Email or password is incorrect");
         }
 
+        // Block deactivated users
+        if (user.getIsActive() != null && !user.getIsActive()) {
+            return AuthResponse.error("AUTH-003", "Account deactivated", "Your account has been deactivated. Contact an administrator.");
+        }
+
         // Generate JWT token
         String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole());
 

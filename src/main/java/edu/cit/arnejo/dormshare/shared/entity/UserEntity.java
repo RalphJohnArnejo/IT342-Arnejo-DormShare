@@ -29,6 +29,9 @@ public class UserEntity {
     @Column(nullable = false)
     private String role = "USER";
 
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -37,6 +40,9 @@ public class UserEntity {
         this.createdAt = LocalDateTime.now();
         if (this.role == null) {
             this.role = "USER";
+        }
+        if (this.isActive == null) {
+            this.isActive = true;
         }
     }
 
@@ -63,6 +69,10 @@ public class UserEntity {
 
     public String getRole() {
         return role;
+    }
+
+    public Boolean getIsActive() {
+        return isActive;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -92,6 +102,10 @@ public class UserEntity {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {
